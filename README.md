@@ -20,7 +20,7 @@ The container installs everything needed automatically:
 
 ```bash
 # 1. Clone this repo
-git clone https://github.com/yourusername/unshackle-webui.git
+git clone https://github.com/SpaceBallz2k8/unshackle-webui-docker.git
 cd unshackle-webui
 
 # 2. Edit .env (set your username/password and port)
