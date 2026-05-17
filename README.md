@@ -8,7 +8,7 @@ The container installs everything needed automatically:
 
 | Tool | Purpose |
 |------|---------|
-| unshackle | Core download engine (from upstream GitHub) |
+| unshackle | Core download engine (from 'dev' upstream GitHub) |
 | ffmpeg | Stream remuxing |
 | mkvtoolnix | MKV muxing |
 | aria2c | Download accelerator |
