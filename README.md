@@ -1,5 +1,5 @@
 # unshackle-webui
-
+**This is purely a development project that was for my personal usage - I decided to share it - unshackle upgrades may break the functionality**
 A fully dockerised web interface for [unshackle](https://github.com/unshackle-dl/unshackle).
 
 ## What's included
