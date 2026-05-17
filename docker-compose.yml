@@ -1,0 +1,13 @@
+services:
+  unshackle-webui:
+    build: .
+    container_name: unshackle-webui
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "${WEBUI_PORT:-8080}:${WEBUI_PORT:-8080}"
+    volumes:
+      - ./config:/config          # unshackle.yaml, WVDs, Cookies, etc.
+      - ./services:/services      # service modules
+      - ./downloads:/downloads    # completed downloads
+      - ./data:/data              # webui SQLite DB

@@ -1,0 +1,1803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Unshackle WebUI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0a;--bg2:#111;--bg3:#181818;--bg4:#1e1e1e;
+  --border:#252525;--border2:#333;
+  --text:#e8e8e8;--muted:#666;--muted2:#888;
+  --accent:#e8ff47;--accent2:#ff6b35;
+  --green:#4ade80;--red:#f87171;--blue:#60a5fa;--purple:#c084fc;--orange:#fb923c;
+  --mono:'JetBrains Mono',monospace;--sans:'Syne',sans-serif;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--mono);overflow:hidden}
+
+/* ── Auth screens ── */
+.auth-wrap{display:flex;align-items:center;justify-content:center;height:100vh;background:var(--bg)}
+.auth-box{background:var(--bg2);border:1px solid var(--border2);border-radius:6px;padding:40px;width:380px}
+.auth-logo{font-family:var(--sans);font-size:28px;font-weight:800;color:var(--accent);margin-bottom:4px}
+.auth-sub{font-size:11px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:32px}
+.auth-error{background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);color:var(--red);padding:10px 14px;border-radius:3px;font-size:12px;margin-bottom:16px}
+
+/* ── App shell ── */
+.shell{display:grid;grid-template-columns:220px 1fr;height:100vh}
+.sidebar{background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.logo{padding:22px 20px 18px;border-bottom:1px solid var(--border)}
+.logo-text{font-family:var(--sans);font-size:20px;font-weight:800;color:var(--accent);line-height:1}
+.logo-sub{font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:4px}
+nav{flex:1;padding:10px 0;overflow-y:auto}
+.nav-section{font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;padding:14px 20px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 20px;cursor:pointer;font-size:12px;font-weight:500;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;transition:all .15s;border-left:2px solid transparent;user-select:none}
+.nav-item:hover{color:var(--text);background:var(--bg3)}
+.nav-item.active{color:var(--accent);border-left-color:var(--accent);background:rgba(232,255,71,.04)}
+.nav-item .badge{margin-left:auto;background:var(--red);color:#fff;font-size:9px;padding:1px 5px;border-radius:8px;font-weight:700}
+.sidebar-footer{padding:14px 20px;border-top:1px solid var(--border);font-size:10px;color:var(--muted)}
+.status-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);margin-right:6px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+.main{display:flex;flex-direction:column;overflow:hidden}
+.topbar{height:54px;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:12px;flex-shrink:0}
+.page-title{font-family:var(--sans);font-size:15px;font-weight:700}
+.topbar-right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.content{flex:1;overflow-y:auto;padding:24px 28px}
+.content::-webkit-scrollbar{width:4px}
+.content::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+.page{display:none}.page.active{display:block}
+
+/* ── Components ── */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:20px;margin-bottom:16px}
+.card-title{font-family:var(--sans);font-size:12px;font-weight:700;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.section-title{font-family:var(--sans);font-size:18px;font-weight:700}
+
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-group{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.form-group.full{grid-column:1/-1}
+label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+input,select,textarea{background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:13px;padding:9px 12px;border-radius:3px;outline:none;transition:border-color .15s;width:100%}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+textarea{resize:vertical;min-height:90px}
+select option{background:var(--bg3)}
+
+.btn{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:9px 18px;border:none;border-radius:3px;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:7px}
+.btn-primary{background:var(--accent);color:#000}
+.btn-primary:hover{background:#d4eb3c;transform:translateY(-1px)}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border2)}
+.btn-ghost:hover{color:var(--text);border-color:var(--border2)}
+.btn-danger{background:transparent;color:var(--red);border:1px solid rgba(248,113,113,.3)}
+.btn-danger:hover{background:rgba(248,113,113,.1)}
+.btn-sm{padding:6px 12px;font-size:10px}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
+.btn-group{display:flex;gap:8px;flex-wrap:wrap}
+
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:2px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+.badge-queued{background:rgba(96,165,250,.15);color:var(--blue)}
+.badge-downloading{background:rgba(232,255,71,.15);color:var(--accent)}
+.badge-completed{background:rgba(74,222,128,.15);color:var(--green)}
+.badge-failed{background:rgba(248,113,113,.15);color:var(--red)}
+.badge-cancelled{background:rgba(102,102,102,.15);color:var(--muted)}
+
+.empty{text-align:center;padding:50px 20px;color:var(--muted);font-size:13px}
+.empty-icon{font-size:36px;margin-bottom:10px;opacity:.3}
+
+/* ── Stats ── */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:16px}
+.stat-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px}
+.stat-value{font-family:var(--sans);font-size:28px;font-weight:800;line-height:1}
+.stat-value.accent{color:var(--accent)}.stat-value.green{color:var(--green)}.stat-value.red{color:var(--red)}.stat-value.blue{color:var(--blue)}
+
+/* ── Job list ── */
+.job-list{display:flex;flex-direction:column;gap:6px}
+.job-item{background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:13px 16px;display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:14px;cursor:pointer;transition:border-color .15s}
+.job-item:hover{border-color:var(--border2)}
+.job-item.downloading{border-left:2px solid var(--accent)}
+.job-item.completed{border-left:2px solid var(--green)}
+.job-item.failed{border-left:2px solid var(--red)}
+.job-title{font-size:13px;font-weight:500;color:var(--text);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.job-meta{font-size:11px;color:var(--muted)}
+.service-tag{display:inline-block;background:rgba(192,132,252,.1);color:var(--purple);padding:1px 6px;border-radius:2px;font-size:10px;margin-right:6px;font-weight:700}
+.progress-bar-wrap{height:3px;background:var(--border);border-radius:2px;margin-top:6px;overflow:hidden}
+.progress-bar-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .5s}
+
+/* ── Search flow ── */
+.step-pills{display:flex;align-items:center;gap:0;margin-bottom:22px}
+.step-pill{padding:7px 15px;border-radius:2px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;background:var(--bg3);color:var(--muted);border:1px solid var(--border)}
+.step-pill.active{background:var(--accent);color:#000;border-color:var(--accent)}
+.step-pill.done{background:rgba(74,222,128,.1);color:var(--green);border-color:rgba(74,222,128,.3)}
+.step-arrow{color:var(--border2);font-size:18px;padding:0 4px}
+
+.result-item{background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:12px 16px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:all .15s;margin-bottom:5px}
+.result-item:hover{border-color:var(--accent);background:rgba(232,255,71,.03)}
+.result-num{font-size:11px;color:var(--muted);min-width:22px}
+.result-title{font-size:13px;font-weight:500}
+.result-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.result-id{font-size:11px;color:var(--purple);margin-left:auto;font-family:var(--mono)}
+
+.ep-item{display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:3px;cursor:pointer;transition:background .1s;margin-bottom:2px}
+.ep-item:hover{background:var(--bg3)}
+.ep-item input[type=checkbox]{accent-color:var(--accent);width:15px;height:15px;cursor:pointer;flex-shrink:0}
+.ep-id{font-size:11px;color:var(--purple);min-width:65px;font-weight:700}
+.ep-title{font-size:13px;color:var(--text)}
+
+/* ── Download options panel ── */
+.dl-options{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px}
+.dl-opt-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px}
+
+/* ── Terminal ── */
+.terminal{background:#050505;border:1px solid var(--border);border-radius:3px;padding:14px;font-size:12px;line-height:1.6;overflow-y:auto;color:#a0a0a0;font-family:var(--mono)}
+.terminal::-webkit-scrollbar{width:4px}
+.terminal::-webkit-scrollbar-thumb{background:var(--border2)}
+.log-line{white-space:pre-wrap;word-break:break-all}
+.log-line.error{color:var(--red)}
+.log-line.success{color:var(--green)}
+.log-line.cmd{color:var(--accent)}
+
+/* ── Upload zone ── */
+.upload-zone{border:2px dashed var(--border2);border-radius:4px;padding:28px;text-align:center;cursor:pointer;transition:all .2s;color:var(--muted);font-size:13px}
+.upload-zone:hover,.upload-zone.dragover{border-color:var(--accent);background:rgba(232,255,71,.03);color:var(--text)}
+.upload-icon{font-size:28px;margin-bottom:8px}
+
+/* ── WVD list ── */
+.wvd-item{background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:12px 16px;display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.wvd-active{border-left:2px solid var(--green)}
+.wvd-name{font-size:13px;font-weight:500;flex:1;color:var(--text)}
+.wvd-badge{font-size:10px;color:var(--green);border:1px solid rgba(74,222,128,.3);padding:2px 8px;border-radius:2px;font-weight:700}
+
+/* ── Credentials table ── */
+.cred-item{background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:10px 14px;display:flex;align-items:center;gap:12px;margin-bottom:5px}
+.cred-service{color:var(--accent);font-weight:700;min-width:80px}
+.cred-profile{color:var(--purple);font-size:11px;min-width:60px}
+
+/* ── Config editor ── */
+.config-editor{background:#050505;border:1px solid var(--border);border-radius:3px;padding:14px;font-family:var(--mono);font-size:12px;color:#a0ffa0;min-height:360px;resize:vertical;width:100%;line-height:1.7}
+
+/* ── Tool status ── */
+.tool-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.tool-card{background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:14px}
+.tool-name{font-weight:700;font-size:13px;margin-bottom:4px}
+.tool-ver{font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tool-ok{color:var(--green)}.tool-miss{color:var(--red)}
+
+/* ── Services ── */
+.svc-item{background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:12px 16px;display:flex;align-items:center;gap:12px;margin-bottom:6px}
+
+/* ── Modal ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:6px;padding:26px;width:540px;max-height:88vh;overflow-y:auto}
+.modal-title{font-family:var(--sans);font-size:16px;font-weight:700;margin-bottom:18px}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
+
+/* ── Tabs ── */
+.tab-bar{display:flex;border-bottom:1px solid var(--border);margin-bottom:18px}
+.tab{padding:8px 16px;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:all .15s}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-panel{display:none}.tab-panel.active{display:block}
+
+/* ── Toast ── */
+#toast-container{position:fixed;bottom:22px;right:22px;display:flex;flex-direction:column;gap:7px;z-index:9999}
+.toast{background:var(--bg2);border:1px solid var(--border2);border-radius:4px;padding:11px 15px;font-size:12px;color:var(--text);max-width:300px;animation:slideIn .2s ease;display:flex;align-items:center;gap:9px}
+.toast.success{border-left:3px solid var(--green)}
+.toast.error{border-left:3px solid var(--red)}
+.toast.info{border-left:3px solid var(--blue)}
+@keyframes slideIn{from{transform:translateX(20px);opacity:0}to{transform:none;opacity:1}}
+
+/* ── File list ── */
+.file-item{background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:8px 14px;display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:12px;font-size:12px;margin-bottom:4px;transition:all .15s}
+.file-item:hover{border-color:var(--border2)}
+.file-item.is-dir{border-left:2px solid var(--accent);background:var(--bg2)}
+.file-size{color:var(--muted);font-size:11px;min-width:80px;text-align:right}
+.file-actions{display:flex;gap:6px}
+.folder-toggle{cursor:pointer;user-select:none;width:18px;display:inline-block;text-align:center;color:var(--muted)}
+.folder-toggle.open{color:var(--accent)}
+
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.spin{display:inline-block;animation:spin 1s linear infinite}
+
+.divider{height:1px;background:var(--border);margin:18px 0}
+
+  /* ── Checkbox alignment ── */
+  .check-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    padding: 4px 0;
+    font-size: 13px;
+    color: var(--text);
+    user-select: none;
+  }
+  .check-row input[type=checkbox] {
+    accent-color: var(--accent);
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+    cursor: pointer;
+    margin: 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN ─────────────────────────────────────────────────────────────── -->
+<div id="login-screen" class="auth-wrap" style="display:none">
+  <div class="auth-box">
+    <div class="auth-logo">unshackle</div>
+    <div class="auth-sub">web interface</div>
+    <div id="login-error" class="auth-error" style="display:none"></div>
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" id="login-user" placeholder="admin" onkeydown="if(event.key==='Enter')doLogin()"/>
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/>
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:8px" onclick="doLogin()">Sign In →</button>
+  </div>
+</div>
+
+<!-- ── APP SHELL ──────────────────────────────────────────────────────────── -->
+<div id="app-shell" class="shell" style="display:none">
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-text">unshackle</div>
+      <div class="logo-sub">web interface</div>
+    </div>
+    <nav>
+      <div class="nav-section">Main</div>
+      <div class="nav-item active" data-page="dashboard">◈ Dashboard</div>
+      <div class="nav-item" data-page="download">⬇ Download</div>
+      <div class="nav-item" data-page="jobs">≡ Jobs</div>
+      <div class="nav-item" data-page="files">📁 Downloads</div>
+      <div class="nav-section">Setup</div>
+      <div class="nav-item" data-page="wvds">🔐 WVDs</div>
+      <div class="nav-item" data-page="credentials">🔑 Credentials</div>
+      <div class="nav-item" data-page="cookies">🍪 Cookies</div>
+      <div class="nav-item" data-page="services">⬡ Services</div>
+      <div class="nav-section">Config</div>
+      <div class="nav-item" data-page="settings">⚙ Settings</div>
+      <div class="nav-item" data-page="config">📝 Config File</div>
+      <div class="nav-item" data-page="tools">🔧 Tools</div>
+    </nav>
+    <div class="sidebar-footer">
+      <span class="status-dot" id="api-dot"></span><span id="api-status">Connecting…</span>
+      <button class="btn btn-ghost btn-sm" style="margin-top:8px;width:100%;justify-content:center" onclick="doLogout()">Sign Out</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <span class="page-title" id="page-title">Dashboard</span>
+      <div class="topbar-right">
+        <span id="topbar-meta" style="font-size:11px;color:var(--muted)"></span>
+      </div>
+    </div>
+    <div class="content">
+
+<!-- ── DASHBOARD ── -->
+<div class="page active" id="page-dashboard">
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-label">Total Jobs</div><div class="stat-value" id="st-total">—</div></div>
+    <div class="stat-card"><div class="stat-label">Running</div><div class="stat-value accent" id="st-running">—</div></div>
+    <div class="stat-card"><div class="stat-label">Completed</div><div class="stat-value green" id="st-completed">—</div></div>
+    <div class="stat-card"><div class="stat-label">Failed</div><div class="stat-value red" id="st-failed">—</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Recent Jobs</div>
+    <div class="job-list" id="dash-jobs"><div class="empty"><div class="empty-icon">◎</div>No jobs yet</div></div>
+  </div>
+</div>
+
+<!-- ── DOWNLOAD ── -->
+<div class="page" id="page-download">
+  <div class="step-pills">
+    <div class="step-pill active" id="sp-1">1 Search</div>
+    <div class="step-arrow">›</div>
+    <div class="step-pill" id="sp-2">2 Select Title</div>
+    <div class="step-arrow">›</div>
+    <div class="step-pill" id="sp-3">3 Episodes</div>
+    <div class="step-arrow">›</div>
+    <div class="step-pill" id="sp-4">4 Download</div>
+    <div style="margin-left:auto;display:flex;gap:8px">
+      <button class="btn btn-ghost btn-sm" onclick="resetDl()">↺ Reset</button>
+      <button class="btn btn-ghost btn-sm" onclick="showDirectDl()">⌨ Direct ID</button>
+    </div>
+  </div>
+
+  <!-- Step 1 -->
+  <div id="dl-s1">
+    <div class="card">
+      <div class="card-title">Search a Service</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Service</label>
+          <select id="dl-service"><option value="">Select…</option></select>
+        </div>
+        <div class="form-group">
+          <label>Search</label>
+          <div style="display:flex;gap:8px">
+            <input type="text" id="dl-query" placeholder="Title name…" onkeydown="if(event.key==='Enter')doSearch()" style="flex:1"/>
+            <button class="btn btn-primary" id="search-btn" onclick="doSearch()">Search</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="search-results-wrap" style="display:none">
+      <div class="card">
+        <div class="card-title" id="search-results-title">Results</div>
+        <div id="search-results-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2: Episodes -->
+  <div id="dl-s2" style="display:none">
+    <div class="card">
+      <div class="card-title" id="ep-card-title">Episodes</div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" onclick="selAll()">Select All</button>
+        <button class="btn btn-ghost btn-sm" onclick="selNone()">None</button>
+        <button class="btn btn-ghost btn-sm" onclick="selInvert()">Invert</button>
+        <span id="sel-count" style="align-self:center;font-size:11px;color:var(--muted)"></span>
+      </div>
+      <div id="ep-list"></div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-ghost btn-sm" onclick="gotoStep(1)">‹ Back</button>
+      <button class="btn btn-primary" id="ep-proceed-btn" onclick="gotoStep(3)">Options →</button>
+    </div>
+  </div>
+
+  <!-- Step 3: Options + Download -->
+  <div id="dl-s3" style="display:none">
+    <div class="card">
+      <div class="card-title">Download Options</div>
+      <div id="dl-confirm-summary" style="font-size:13px;color:var(--muted);line-height:1.8;margin-bottom:16px"></div>
+      <div class="dl-options">
+        <div>
+          <span class="dl-opt-label">Quality</span>
+          <select id="opt-quality">
+            <option value="">Best available</option>
+            <option value="2160">4K (2160p)</option>
+            <option value="1080">1080p</option>
+            <option value="720">720p</option>
+            <option value="480">480p</option>
+          </select>
+        </div>
+        <div>
+          <span class="dl-opt-label">Video Codec</span>
+          <select id="opt-vcodec">
+            <option value="">Any</option>
+            <option value="H265">H.265/HEVC</option>
+            <option value="H264">H.264/AVC</option>
+            <option value="AV1">AV1</option>
+            <option value="VP9">VP9</option>
+          </select>
+        </div>
+        <div>
+          <span class="dl-opt-label">HDR Range</span>
+          <select id="opt-range">
+            <option value="">SDR (default)</option>
+            <option value="HDR10">HDR10</option>
+            <option value="DV">Dolby Vision</option>
+            <option value="HLG">HLG</option>
+          </select>
+        </div>
+        <div>
+          <span class="dl-opt-label">Audio Codec</span>
+          <select id="opt-acodec">
+            <option value="">Any</option>
+            <option value="EC3">E-AC3 (Dolby)</option>
+            <option value="AAC">AAC</option>
+            <option value="AC3">AC3</option>
+            <option value="FLAC">FLAC</option>
+          </select>
+        </div>
+        <div>
+          <span class="dl-opt-label">Subtitles</span>
+          <select id="opt-slang">
+            <option value="all">All languages</option>
+            <option value="en">English only</option>
+            <option value="">None</option>
+          </select>
+        </div>
+        <div>
+          <span class="dl-opt-label">Profile</span>
+          <input type="text" id="opt-profile" placeholder="default"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Proxy (optional)</label>
+        <input type="text" id="opt-proxy" placeholder="e.g. GB or socks5://…"/>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:4px">
+        <button class="btn btn-ghost btn-sm" onclick="gotoStep(2)">‹ Back</button>
+        <button class="btn btn-primary" id="start-dl-btn" onclick="startDownload()">⬇ Start Download</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Direct ID mode -->
+  <div id="dl-direct" style="display:none">
+    <div class="card">
+      <div class="card-title">Direct Download by ID</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Service</label>
+          <select id="dd-service"><option value="">Select…</option></select>
+        </div>
+        <div class="form-group">
+          <label>Title ID / URL</label>
+          <input type="text" id="dd-id" placeholder="e.g. b06kw5fq"/>
+        </div>
+        <div class="form-group">
+          <label>Wanted (optional)</label>
+          <input type="text" id="dd-wanted" placeholder="S01E01,S01E02 or S01"/>
+        </div>
+        <div class="form-group">
+          <label>Profile (optional)</label>
+          <input type="text" id="dd-profile" placeholder="default"/>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-ghost btn-sm" onclick="resetDl()">‹ Back to Search</button>
+        <button class="btn btn-primary" onclick="startDirectDownload()">⬇ Download</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── JOBS ── -->
+<div class="page" id="page-jobs">
+  <div class="section-header">
+    <span class="section-title">All Jobs</span>
+    <div class="btn-group">
+      <button class="btn btn-ghost btn-sm" onclick="loadJobs()">↻ Refresh</button>
+      <button class="btn btn-ghost btn-sm" onclick="clearJobs('completed')">✓ Completed</button>
+      <button class="btn btn-ghost btn-sm" onclick="clearJobs('failed')">✕ Failed</button>
+      <button class="btn btn-danger btn-sm" onclick="clearJobs('all')">⚠ Clear All</button>
+    </div>
+  </div>
+  <div class="job-list" id="all-jobs"><div class="empty"><div class="empty-icon">≡</div>No jobs yet</div></div>
+</div>
+
+<!-- ── FILES ── -->
+<div class="page" id="page-files">
+  <div class="section-header">
+    <span class="section-title">Downloaded Files</span>
+    <button class="btn btn-ghost btn-sm" onclick="loadFiles()">↻ Refresh</button>
+  </div>
+  <div id="file-list"><div class="empty"><div class="empty-icon">📁</div>No files yet</div></div>
+</div>
+
+<!-- ── WVDS ── -->
+<div class="page" id="page-wvds">
+  <div class="section-header">
+    <span class="section-title">WVD Devices</span>
+    <button class="btn btn-primary btn-sm" onclick="document.getElementById('wvd-input').click()">+ Upload WVD</button>
+    <input type="file" id="wvd-input" accept=".wvd" style="display:none" onchange="uploadWvd(this)"/>
+  </div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-title">About WVDs</div>
+    <p style="font-size:12px;color:var(--muted);line-height:1.9">
+      Widevine Device files (<code style="color:var(--accent)">.wvd</code>) grant access to DRM-protected content.
+      Upload one or more — then click <strong>Set Active</strong> to make it the default CDM.<br/>
+      Files are stored in <code style="color:var(--accent)">/config/WVDs/</code> and can also be dropped there directly.
+    </p>
+  </div>
+  <div class="card">
+    <div class="card-title">Installed Devices</div>
+    <div id="wvd-list"><div class="empty"><div class="empty-icon">🔐</div>No WVD files</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Upload</div>
+    <div class="upload-zone" id="wvd-zone" onclick="document.getElementById('wvd-input2').click()">
+      <div class="upload-icon">⬆</div><div>Click or drag a <strong>.wvd</strong> file</div>
+    </div>
+    <input type="file" id="wvd-input2" accept=".wvd" style="display:none" onchange="uploadWvd(this)"/>
+  </div>
+</div>
+
+<!-- ── CREDENTIALS ── -->
+<div class="page" id="page-credentials">
+  <div class="section-header">
+    <span class="section-title">Credentials</span>
+    <button class="btn btn-primary btn-sm" onclick="openModal('cred-modal')">+ Add Credential</button>
+  </div>
+  <div class="card" style="margin-bottom:16px">
+    <p style="font-size:12px;color:var(--muted);line-height:1.9">
+      Username/password pairs for streaming services. These are written directly into <code style="color:var(--accent)">unshackle.yaml</code>
+      under the <code style="color:var(--accent)">credentials:</code> section. Specify a profile name for multi-account setups.
+    </p>
+  </div>
+  <div id="cred-list"><div class="empty"><div class="empty-icon">🔑</div>No credentials</div></div>
+</div>
+
+<!-- ── COOKIES ── -->
+<div class="page" id="page-cookies">
+  <div class="section-header">
+    <span class="section-title">Cookies</span>
+    <button class="btn btn-primary btn-sm" onclick="openModal('cookie-modal')">+ Upload Cookie</button>
+  </div>
+  <div class="card" style="margin-bottom:16px">
+    <p style="font-size:12px;color:var(--muted);line-height:1.9">
+      Cookie files (Netscape format) are saved as <code style="color:var(--accent)">SERVICE.txt</code>
+      in <code style="color:var(--accent)">/config/Cookies/</code> — the name must match the service tag exactly.
+    </p>
+  </div>
+  <div id="cookie-list"><div class="empty"><div class="empty-icon">🍪</div>No cookie files</div></div>
+</div>
+
+<!-- ── SERVICES ── -->
+<div class="page" id="page-services">
+  <div class="section-header">
+    <span class="section-title">Services</span>
+    <div class="btn-group">
+      <button class="btn btn-ghost btn-sm" onclick="loadServices()">↻ Refresh</button>
+      <button class="btn btn-primary btn-sm" onclick="openModal('svc-modal')">+ Add Service</button>
+    </div>
+  </div>
+  <div id="svc-list"><div class="empty"><div class="empty-icon">⬡</div>No services installed</div></div>
+</div>
+
+<!-- ── SETTINGS ── -->
+<div class="page" id="page-settings">
+  <div class="section-header"><span class="section-title">Settings</span></div>
+
+  <div class="tab-bar">
+    <div class="tab active" onclick="switchTab('tab-output',this)">Output</div>
+    <div class="tab" onclick="switchTab('tab-dl',this)">Download</div>
+    <div class="tab" onclick="switchTab('tab-mux',this)">Muxing</div>
+    <div class="tab" onclick="switchTab('tab-sub',this)">Subtitles</div>
+    <div class="tab" onclick="switchTab('tab-headers',this)">Headers</div>
+    <div class="tab" onclick="switchTab('tab-cdm',this)">CDM</div>
+  </div>
+
+  <!-- Output templates -->
+  <div class="tab-panel active" id="tab-output">
+    <div class="card">
+      <div class="card-title">Output Templates</div>
+      <div class="form-group"><label>Movies</label><input type="text" id="tpl-movies" placeholder="{title}.{year}.…"/></div>
+      <div class="form-group"><label>Series</label><input type="text" id="tpl-series" placeholder="{title}.{season_episode}.…"/></div>
+      <div class="form-group"><label>Songs</label><input type="text" id="tpl-songs" placeholder="{track_number}.{title}.…"/></div>
+      <div class="form-group"><label>Group Tag</label><input type="text" id="tpl-tag" placeholder="YOURNAMETAG"/></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <label class="check-row"><input type="checkbox" id="tpl-tag-name"/> Tag group name</label>
+        <label class="check-row"><input type="checkbox" id="tpl-tag-imdb"/> Tag IMDB/TMDB</label>
+        <label class="check-row"><input type="checkbox" id="tpl-unicode"/> Unicode filenames</label>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">API Keys</div>
+      <div class="form-grid">
+        <div class="form-group"><label>TMDB API Key</label><input type="text" id="set-tmdb" placeholder="your_tmdb_api_key"/></div>
+        <div class="form-group"><label>SIMKL Client ID</label><input type="text" id="set-simkl" placeholder="your_simkl_client_id"/></div>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="saveOutputSettings()">Save Output Settings</button>
+  </div>
+
+  <!-- Download defaults -->
+  <div class="tab-panel" id="tab-dl">
+    <div class="card">
+      <div class="card-title">Download Defaults</div>
+      <div class="form-grid">
+        <div class="form-group"><label>Concurrent Downloads</label><input type="number" id="set-downloads" min="1" max="20" value="4"/></div>
+        <div class="form-group"><label>Workers per Track</label><input type="number" id="set-workers" min="1" max="32" value="16"/></div>
+        <div class="form-group"><label>Subtitle Format</label>
+          <select id="set-subfmt">
+            <option value="srt">SRT</option><option value="vtt">VTT</option><option value="ass">ASS</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Downloader</label>
+          <select id="set-downloader">
+            <option value="aria2c">aria2c</option>
+            <option value="n_m3u8dl_re">N_m3u8DL-RE</option>
+            <option value="requests">requests</option>
+            <option value="curl_impersonate">curl_impersonate</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Default Languages (comma separated)</label><input type="text" id="set-lang" placeholder="en,fr"/></div>
+        <div class="form-group"><label>Subtitle Languages</label><input type="text" id="set-slang" placeholder="all"/></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">aria2c Settings</div>
+      <div class="form-grid">
+        <div class="form-group"><label>Max Concurrent DLs</label><input type="number" id="aria-conc" value="4"/></div>
+        <div class="form-group"><label>Connections per Server</label><input type="number" id="aria-conn" value="3"/></div>
+        <div class="form-group"><label>Split</label><input type="number" id="aria-split" value="5"/></div>
+        <div class="form-group"><label>File Allocation</label>
+          <select id="aria-alloc"><option value="falloc">falloc</option><option value="prealloc">prealloc</option><option value="none">none</option><option value="trunc">trunc</option></select>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">N_m3u8DL-RE Settings</div>
+      <div class="form-grid">
+        <div class="form-group"><label>Thread Count</label><input type="number" id="nm3-threads" value="16"/></div>
+        <div class="form-group"><label>Ad Keyword</label><input type="text" id="nm3-adkw" value="advertisement"/></div>
+        <div class="form-group" style="align-self:end"><label class="check-row"><input type="checkbox" id="nm3-proxy" checked/> Use Proxy</label></div>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="saveDlSettings()">Save Download Settings</button>
+  </div>
+
+  <!-- Muxing -->
+  <div class="tab-panel" id="tab-mux">
+    <div class="card">
+      <div class="card-title">Muxing Options</div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <label class="check-row"><input type="checkbox" id="mux-title"/> Set title metadata in MKV</label>
+        <label class="check-row"><input type="checkbox" id="mux-merge-audio" checked/> Merge all audio into one MKV (uncheck for per-codec files)</label>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="saveMuxSettings()">Save Muxing Settings</button>
+  </div>
+
+  <!-- Subtitles -->
+  <div class="tab-panel" id="tab-sub">
+    <div class="card">
+      <div class="card-title">Subtitle Processing</div>
+      <div class="form-grid">
+        <div class="form-group"><label>Conversion Method</label>
+          <select id="sub-method"><option value="auto">auto</option><option value="subby">subby</option><option value="pycaption">pycaption</option><option value="subtitleedit">subtitleedit</option><option value="pysubs2">pysubs2</option></select>
+        </div>
+        <div class="form-group"><label>SDH Strip Method</label>
+          <select id="sub-sdh"><option value="auto">auto</option><option value="subby">subby</option><option value="subtitleedit">subtitleedit</option><option value="filter-subs">filter-subs</option></select>
+        </div>
+        <div class="form-group"><label>Output Mode</label>
+          <select id="sub-output"><option value="mux">mux (embed in MKV)</option><option value="sidecar">sidecar (separate files)</option><option value="both">both</option></select>
+        </div>
+        <div class="form-group"><label>Sidecar Format</label>
+          <select id="sub-sidecar"><option value="srt">srt</option><option value="vtt">vtt</option><option value="ass">ass</option></select>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px">
+        <label class="check-row"><input type="checkbox" id="sub-strip-sdh" checked/> Auto-strip SDH subtitles</label>
+        <label class="check-row"><input type="checkbox" id="sub-convert-strip" checked/> Convert before stripping</label>
+        <label class="check-row"><input type="checkbox" id="sub-preserve-fmt" checked/> Preserve formatting</label>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="saveSubSettings()">Save Subtitle Settings</button>
+  </div>
+
+  <!-- Headers -->
+  <div class="tab-panel" id="tab-headers">
+    <div class="card">
+      <div class="card-title">HTTP Headers</div>
+      <div class="form-group"><label>Accept-Language</label><input type="text" id="hdr-lang" value="en-US,en;q=0.8"/></div>
+      <div class="form-group"><label>User-Agent</label><input type="text" id="hdr-ua" value="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"/></div>
+    </div>
+    <button class="btn btn-primary" onclick="saveHeaderSettings()">Save Header Settings</button>
+  </div>
+
+  <!-- CDM -->
+  <div class="tab-panel" id="tab-cdm">
+    <div class="card">
+      <div class="card-title">CDM Configuration</div>
+      <p style="font-size:12px;color:var(--muted);line-height:1.8;margin-bottom:14px">
+        Set the default Widevine device. For per-service or quality-based CDM selection, edit the config file directly.
+      </p>
+      <div class="form-group"><label>Default CDM Device (stem name, no extension)</label><input type="text" id="cdm-default" placeholder="device_name"/></div>
+    </div>
+    <button class="btn btn-primary" onclick="saveCdmSettings()">Save CDM Settings</button>
+  </div>
+</div>
+
+<!-- ── CONFIG FILE ── -->
+<div class="page" id="page-config">
+  <div class="section-header">
+    <span class="section-title">Config File</span>
+    <button class="btn btn-primary btn-sm" onclick="saveConfigRaw()">💾 Save</button>
+  </div>
+  <div class="card">
+    <div class="card-title">unshackle.yaml — raw editor</div>
+    <textarea class="config-editor" id="config-editor" spellcheck="false"></textarea>
+    <p style="margin-top:8px;font-size:11px;color:var(--muted)">Saved to <code style="color:var(--accent)">/config/unshackle.yaml</code> and synced to the unshackle XDG config dir automatically.</p>
+  </div>
+</div>
+
+<!-- ── TOOLS ── -->
+<div class="page" id="page-tools">
+  <div class="section-header">
+    <span class="section-title">Installed Tools</span>
+    <button class="btn btn-ghost btn-sm" onclick="loadTools()">↻ Refresh</button>
+  </div>
+  <div class="tool-grid" id="tool-grid"><div class="empty"><div class="empty-icon">🔧</div>Loading…</div></div>
+</div>
+
+    </div><!-- /content -->
+  </main>
+</div><!-- /shell -->
+
+<!-- ── MODALS ────────────────────────────────────────────────────────────── -->
+
+<!-- Job detail modal -->
+<div class="modal-overlay" id="job-modal">
+  <div class="modal" style="width:680px">
+    <div class="modal-title" id="job-modal-title">Job</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <span id="job-modal-badge"></span>
+      <span id="job-modal-progress" style="font-size:12px;color:var(--muted)"></span>
+    </div>
+    <div class="progress-bar-wrap" id="job-modal-progbar" style="margin-bottom:12px"><div class="progress-bar-fill" id="job-modal-progfill" style="width:0%"></div></div>
+    <div class="terminal" style="height:300px" id="job-modal-term"></div>
+    <div class="modal-actions">
+      <button class="btn btn-danger btn-sm" id="job-modal-cancel-btn" onclick="cancelFromModal()">✕ Cancel</button>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('job-modal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Service modal -->
+<div class="modal-overlay" id="svc-modal">
+  <div class="modal" style="width:560px">
+    <div class="modal-title">Add Service</div>
+    <div class="tab-bar">
+      <div class="tab active" onclick="switchTab('svc-tab-zip',this)">⬆ Upload ZIP</div>
+      <div class="tab" onclick="switchTab('svc-tab-git',this)">⎇ Git Repo</div>
+    </div>
+    <div class="tab-panel active" id="svc-tab-zip">
+      <div class="upload-zone" id="svc-zip-zone" onclick="document.getElementById('svc-zip-input').click()">
+        <div class="upload-icon">⬆</div>
+        <div>Click or drag a <strong>.zip</strong> of service folder(s)</div>
+        <div style="font-size:11px;margin-top:6px;color:var(--muted)">Each top-level folder in the zip becomes a service</div>
+      </div>
+      <input type="file" id="svc-zip-input" accept=".zip" style="display:none" onchange="uploadSvcZip(this)"/>
+    </div>
+    <div class="tab-panel" id="svc-tab-git">
+      <div class="form-group"><label>Repository URL</label><input type="text" id="git-url" placeholder="https://github.com/user/repo.git"/></div>
+      <div class="form-group"><label>Branch</label><input type="text" id="git-branch" value="main"/></div>
+      <button class="btn btn-primary btn-sm" onclick="cloneRepo()" id="clone-btn">⎇ Clone</button>
+      <div class="terminal" id="clone-term" style="height:120px;margin-top:12px;display:none"></div>
+    </div>
+    <div class="modal-actions"><button class="btn btn-ghost btn-sm" onclick="closeModal('svc-modal')">Close</button></div>
+  </div>
+</div>
+
+<!-- Credential modal -->
+<div class="modal-overlay" id="cred-modal">
+  <div class="modal">
+    <div class="modal-title">Add Credential</div>
+    <div class="form-grid">
+      <div class="form-group"><label>Service (e.g. NF, AMZN, iP)</label><input type="text" id="cred-svc" placeholder="SERVICE_TAG"/></div>
+      <div class="form-group"><label>Profile (blank = direct)</label><input type="text" id="cred-profile" placeholder="default (optional)"/></div>
+      <div class="form-group"><label>Username / Email</label><input type="text" id="cred-user"/></div>
+      <div class="form-group"><label>Password</label><input type="password" id="cred-pass"/></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('cred-modal')">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="addCredential()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Cookie upload modal -->
+<div class="modal-overlay" id="cookie-modal">
+  <div class="modal">
+    <div class="modal-title">Upload Cookie File</div>
+    <div class="form-group"><label>Service tag (e.g. STV, UKTV, NF)</label><input type="text" id="cookie-svc" placeholder="SERVICE_TAG"/></div>
+    <div class="upload-zone" onclick="document.getElementById('cookie-input').click()">
+      <div class="upload-icon">🍪</div>
+      <div>Click to select cookie file</div>
+      <div style="font-size:11px;margin-top:6px;color:var(--muted)">Will be saved as SERVICE.txt in /config/Cookies/</div>
+    </div>
+    <input type="file" id="cookie-input" accept=".txt,.json" style="display:none" onchange="uploadCookie(this)"/>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('cookie-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// CORE
+// ═══════════════════════════════════════════════════════════════════════════
+
+let currentPage = 'dashboard';
+let currentJobModalId = null;
+let jobPollInterval = null;
+
+async function api(path, opts = {}) {
+  const res = await fetch('/api' + path, opts);
+  if (res.status === 401) { showLogin(); throw new Error('Not authenticated'); }
+  if (!res.ok) {
+    const txt = await res.text();
+    let msg;
+    try { msg = JSON.parse(txt).detail || txt; } catch { msg = txt; }
+    throw new Error(msg);
+  }
+  return res.json();
+}
+
+function toast(msg, type = 'info') {
+  const icons = {success:'✓', error:'✕', info:'ℹ'};
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span>${icons[type]||'·'}</span>${escHtml(msg)}`;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function fmtSize(b) {
+  if(b<1024) return b+' B';
+  if(b<1048576) return (b/1024).toFixed(1)+' KB';
+  if(b<1073741824) return (b/1048576).toFixed(1)+' MB';
+  return (b/1073741824).toFixed(2)+' GB';
+}
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function switchTab(panelId, tabEl) {
+  const bar = tabEl.parentElement;
+  bar.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  tabEl.classList.add('active');
+  const container = bar.nextElementSibling;
+  // find all sibling tab panels
+  let el = container;
+  while (el) {
+    if (el.classList && el.classList.contains('tab-panel')) el.classList.remove('active');
+    el = el.nextElementSibling;
+  }
+  // also check if container itself is the first panel
+  let panels = bar.parentElement.querySelectorAll('.tab-panel');
+  panels.forEach(p => p.classList.remove('active'));
+  document.getElementById(panelId).classList.add('active');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════════════════════════════════
+
+function showLogin() {
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app-shell').style.display = 'none';
+}
+
+function showApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-shell').style.display = 'grid';
+}
+
+async function checkAuth() {
+  try {
+    const r = await fetch('/api/auth/me');
+    const data = await r.json();
+    if (data.authenticated) { showApp(); initApp(); }
+    else showLogin();
+  } catch { showLogin(); }
+}
+
+async function doLogin() {
+  const user = document.getElementById('login-user').value;
+  const pass = document.getElementById('login-pass').value;
+  try {
+    await api('/auth/login', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username:user,password:pass})});
+    showApp(); initApp();
+  } catch(e) {
+    const el = document.getElementById('login-error');
+    el.textContent = 'Invalid credentials';
+    el.style.display = 'block';
+  }
+}
+
+async function doLogout() {
+  await fetch('/api/auth/logout', {method:'POST'});
+  showLogin();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════════════════════════
+
+const PAGE_TITLES = {
+  dashboard:'Dashboard', download:'Download', jobs:'Jobs', files:'Downloads',
+  wvds:'WVD Devices', credentials:'Credentials', cookies:'Cookies', services:'Services',
+  settings:'Settings', config:'Config File', tools:'Tools'
+};
+
+function navigate(page) {
+  currentPage = page;
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.page === page));
+  document.querySelectorAll('.page').forEach(p => p.classList.toggle('active', p.id === `page-${page}`));
+  document.getElementById('page-title').textContent = PAGE_TITLES[page] || page;
+
+  if (page === 'dashboard')    loadDashboard();
+  if (page === 'jobs')         loadJobs();
+  if (page === 'files')        loadFiles();
+  if (page === 'wvds')         loadWvds();
+  if (page === 'credentials')  loadCredentials();
+  if (page === 'cookies')      loadCookies();
+  if (page === 'services')     loadServices();
+  if (page === 'settings')     loadSettings();
+  if (page === 'config')       loadConfigRaw();
+  if (page === 'tools')        loadTools();
+  if (page === 'download')     populateServiceDropdowns();
+}
+
+document.querySelectorAll('.nav-item[data-page]').forEach(el =>
+  el.addEventListener('click', () => navigate(el.dataset.page))
+);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════════════
+
+function initApp() {
+  checkApiStatus();
+  setInterval(checkApiStatus, 10000);
+  loadDashboard();
+  setInterval(() => { if(currentPage==='dashboard') loadDashboard(); if(currentPage==='jobs') loadJobs(); }, 6000);
+}
+
+async function checkApiStatus() {
+  try {
+    await api('/unshackle/health');
+    document.getElementById('api-dot').style.background = 'var(--green)';
+    document.getElementById('api-status').textContent = 'API Ready';
+  } catch {
+    document.getElementById('api-dot').style.background = 'var(--red)';
+    document.getElementById('api-status').textContent = 'API Offline';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function loadDashboard() {
+  try {
+    const { jobs } = await api('/unshackle/jobs');
+    const stats = {total: jobs.length, running: 0, completed: 0, failed: 0};
+    jobs.forEach(j => {
+      if (j.status === 'downloading') stats.running++;
+      if (j.status === 'completed') stats.completed++;
+      if (j.status === 'failed') stats.failed++;
+    });
+    document.getElementById('st-total').textContent = stats.total;
+    document.getElementById('st-running').textContent = stats.running;
+    document.getElementById('st-completed').textContent = stats.completed;
+    document.getElementById('st-failed').textContent = stats.failed;
+
+    const container = document.getElementById('dash-jobs');
+    const recent = jobs.slice(0, 8);
+    container.innerHTML = recent.length ? recent.map(jobHtml).join('') :
+      '<div class="empty"><div class="empty-icon">◎</div>No jobs yet</div>';
+  } catch(e) { /* silent */ }
+}
+
+function jobHtml(j) {
+  const pct = Math.round(j.progress || 0);
+  // Build a nice display title: prefer our stored label, fall back to title_id
+  const label = j.title_label || j.title_id || '';
+  const epTag = j.episode_id
+    ? `<span style="color:var(--purple);font-size:11px;font-weight:700;margin-left:6px">${escHtml(j.episode_id)}</span>`
+    : '';
+  // Progress bar — only when actually downloading
+  const bar = j.status === 'downloading'
+    ? `<div class="progress-bar-wrap" style="margin-top:6px">
+        <div class="progress-bar-fill" style="width:${pct}%"></div>
+       </div>
+       <div style="font-size:10px;color:var(--muted);margin-top:3px">${pct}% — speed not available via API</div>`
+    : '';
+  const outFiles = (j.output_files || []);
+  const fileInfo = outFiles.length
+    ? `<div style="font-size:10px;color:var(--green);margin-top:3px">📁 ${escHtml(outFiles[outFiles.length-1].split('/').pop())}</div>`
+    : '';
+  return `<div class="job-item ${j.status}" onclick="openJobModal('${j.job_id}','${escHtml(label)}')">
+    <div style="min-width:0;flex:1">
+      <div class="job-title">
+        <span class="service-tag">${escHtml(j.service)}</span>${escHtml(label)}${epTag}
+      </div>
+      <div class="job-meta">${new Date(j.created_time).toLocaleString()}</div>
+      ${bar}${fileInfo}
+    </div>
+    <span class="badge badge-${j.status}" style="flex-shrink:0">${j.status}</span>
+    <button class="btn btn-danger btn-sm" style="flex-shrink:0" onclick="event.stopPropagation();cancelJobById('${j.job_id}')">✕</button>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// JOBS
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function loadJobs() {
+  try {
+    const { jobs } = await api('/unshackle/jobs');
+    const c = document.getElementById('all-jobs');
+    c.innerHTML = jobs.length ? jobs.map(jobHtml).join('') :
+      '<div class="empty"><div class="empty-icon">≡</div>No jobs</div>';
+  } catch(e) { toast('Failed to load jobs: '+e.message, 'error'); }
+}
+
+async function cancelJobById(id) {
+  try { await api(`/unshackle/jobs/${id}`, {method:'DELETE'}); toast('Cancelled','info'); loadJobs(); loadDashboard(); }
+  catch(e) { toast('Cancel failed: '+e.message,'error'); }
+}
+
+async function clearJobs(status) {
+  const labels = {all:'all jobs', completed:'completed jobs', failed:'failed jobs', cancelled:'cancelled jobs'};
+  if (!confirm(`Clear ${labels[status]||status}?`)) return;
+  // Unshackle API doesn't have bulk clear — we cancel/delete individually
+  try {
+    const { jobs } = await api('/unshackle/jobs', {});
+    const targets = status === 'all' ? jobs : jobs.filter(j => j.status === status);
+    for (const j of targets) {
+      try { await api(`/unshackle/jobs/${j.job_id}`, {method:'DELETE'}); } catch{}
+    }
+    toast(`Cleared ${targets.length} job(s)`, 'info');
+    loadJobs(); loadDashboard();
+  } catch(e) { toast('Clear failed: '+e.message,'error'); }
+}
+
+function openJobModal(id, title) {
+  currentJobModalId = id;
+  document.getElementById('job-modal-title').textContent = title;
+  document.getElementById('job-modal-badge').innerHTML = '';
+  document.getElementById('job-modal-term').innerHTML = '';
+  document.getElementById('job-modal-progfill').style.width = '0%';
+  openModal('job-modal');
+  pollJobModal(id);
+}
+
+function cancelFromModal() {
+  if (currentJobModalId) cancelJobById(currentJobModalId);
+  closeModal('job-modal');
+}
+
+function pollJobModal(id) {
+  if (jobPollInterval) clearInterval(jobPollInterval);
+  const term = document.getElementById('job-modal-term');
+  let lastStatus = '';
+  let shownFiles = false;
+
+  const tick = async () => {
+    try {
+      const job = await api(`/unshackle/jobs/${id}`);
+      document.getElementById('job-modal-badge').innerHTML =
+        `<span class="badge badge-${job.status}">${job.status}</span>`;
+      const pct = Math.round(job.progress || 0);
+      document.getElementById('job-modal-progress').textContent = pct > 0 && pct < 100 ? `${pct}%` : '';
+      document.getElementById('job-modal-progfill').style.width = `${pct}%`;
+
+      if (job.status !== lastStatus) {
+        if (job.title_label) addTermLine(term, `▸ ${job.title_label}${job.episode_id ? ' · ' + job.episode_id : ''}`, '');
+        addTermLine(term, `▸ Status: ${job.status}`, job.status === 'failed' ? 'error' : 'success');
+        lastStatus = job.status;
+      }
+
+      if (job.error_message) addTermLine(term, `✕ ${job.error_message}`, 'error');
+      if (job.error_details && job.error_details !== job.error_message)
+        addTermLine(term, `  ${job.error_details}`, 'error');
+
+      if (job.status === 'completed' && !shownFiles && (job.output_files||[]).length) {
+        job.output_files.forEach(f => addTermLine(term, `✓ ${f.split('/').pop()}`, 'success'));
+        shownFiles = true;
+      }
+
+      if (job.status !== 'queued' && job.status !== 'downloading') {
+        clearInterval(jobPollInterval);
+        jobPollInterval = null;
+        document.getElementById('job-modal-cancel-btn').style.display = 'none';
+      }
+    } catch(e) { /* silent */ }
+  };
+
+  tick();
+  jobPollInterval = setInterval(tick, 2000);
+}
+
+function addTermLine(term, text, cls = '') {
+  const div = document.createElement('div');
+  div.className = 'log-line ' + cls;
+  div.textContent = text;
+  term.appendChild(div);
+  term.scrollTop = term.scrollHeight;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DOWNLOAD FLOW
+// ═══════════════════════════════════════════════════════════════════════════
+
+const dlState = {
+  service: '', query: '',
+  results: [], selected: null,
+  titles: [], selectedIdx: new Set(),
+};
+
+async function populateServiceDropdowns() {
+  try {
+    const { services } = await api('/unshackle/services');
+    const opts = '<option value="">Select service…</option>' +
+      (services||[]).map(s => `<option value="${s.tag}">${s.tag}</option>`).join('');
+    document.getElementById('dl-service').innerHTML = opts;
+    document.getElementById('dd-service').innerHTML = opts;
+  } catch {}
+}
+
+function gotoStep(n) {
+  [1,2,3].forEach(i => document.getElementById(`dl-s${i}`).style.display = i===n?'':'none');
+  document.getElementById('dl-direct').style.display = 'none';
+  ['1','2','3','4'].forEach(i => {
+    const p = document.getElementById(`sp-${i}`);
+    p.classList.toggle('active', parseInt(i)===n);
+    p.classList.toggle('done', parseInt(i)<n);
+  });
+  if (n===3) buildConfirmSummary();
+}
+
+function resetDl() {
+  Object.assign(dlState, {service:'',query:'',results:[],selected:null,titles:[],selectedIdx:new Set()});
+  document.getElementById('dl-query').value = '';
+  document.getElementById('search-results-wrap').style.display = 'none';
+  [1,2,3].forEach(i => document.getElementById(`dl-s${i}`).style.display = i===1?'':'none');
+  document.getElementById('dl-direct').style.display = 'none';
+  ['1','2','3','4'].forEach(i => {
+    document.getElementById(`sp-${i}`).classList.remove('active','done');
+  });
+  document.getElementById('sp-1').classList.add('active');
+}
+
+function showDirectDl() {
+  [1,2,3].forEach(i => document.getElementById(`dl-s${i}`).style.display = 'none');
+  document.getElementById('dl-direct').style.display = '';
+  populateServiceDropdowns();
+}
+
+async function doSearch() {
+  const service = document.getElementById('dl-service').value;
+  const query = document.getElementById('dl-query').value.trim();
+  if (!service) return toast('Select a service','error');
+  if (!query) return toast('Enter a search term','error');
+
+  dlState.service = service;
+  const btn = document.getElementById('search-btn');
+  btn.disabled = true; btn.textContent = '⏳ Searching…';
+
+  try {
+    const data = await api('/unshackle/search', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({service, query})
+    });
+    dlState.results = data.results || [];
+    const wrap = document.getElementById('search-results-wrap');
+    const list = document.getElementById('search-results-list');
+    const title = document.getElementById('search-results-title');
+    wrap.style.display = '';
+    title.textContent = `${dlState.results.length} result(s) for "${query}"`;
+    list.innerHTML = '';
+
+    if (!dlState.results.length) {
+      list.innerHTML = '<div class="empty"><div class="empty-icon">◎</div>No results</div>';
+      return;
+    }
+
+    dlState.results.forEach((r, i) => {
+      const el = document.createElement('div');
+      el.className = 'result-item';
+      el.onclick = () => selectResult(i);
+      const label = r.label || '';
+      el.innerHTML =
+        `<span class="result-num">${i+1}</span>` +
+        `<div style="flex:1"><div class="result-title">${escHtml(r.title||r.id)}</div>` +
+        (label ? `<div class="result-meta">${escHtml(label)}</div>` : '') +
+        `</div>` +
+        `<span class="result-id">${escHtml(r.id||'')}</span>`;
+      list.appendChild(el);
+    });
+  } catch(e) { toast('Search failed: '+e.message,'error'); }
+  finally { btn.disabled=false; btn.textContent='Search'; }
+}
+
+async function selectResult(i) {
+  dlState.selected = dlState.results[i];
+  const { id, title } = dlState.selected;
+
+  document.getElementById('ep-card-title').textContent = `Loading: ${title||id}…`;
+  gotoStep(2);
+  document.getElementById('ep-list').innerHTML =
+    '<div class="empty"><div class="spin" style="font-size:24px">↻</div><div style="margin-top:8px">Fetching episodes…</div></div>';
+
+  try {
+    const data = await api('/unshackle/list-titles', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({service: dlState.service, title_id: id})
+    });
+    dlState.titles = data.titles || [];
+    dlState.selectedIdx = new Set(dlState.titles.map((_,i)=>i));
+    document.getElementById('ep-card-title').textContent = title || id;
+    renderEpisodes();
+  } catch(e) {
+    document.getElementById('ep-list').innerHTML =
+      `<div class="empty" style="color:var(--red)">Failed: ${escHtml(e.message)}</div>`;
+  }
+}
+
+function renderEpisodes() {
+  const list = document.getElementById('ep-list');
+  if (!dlState.titles.length) {
+    list.innerHTML = '<div class="empty">No episodes found — try Direct ID download</div>';
+    updateSelCount(); return;
+  }
+  list.innerHTML = '';
+  dlState.titles.forEach((t, i) => {
+    const label = document.createElement('label');
+    label.className = 'ep-item';
+    const epId = t.type === 'episode'
+      ? `S${String(t.season||0).padStart(2,'0')}E${String(t.number||0).padStart(2,'0')}`
+      : '';
+    label.innerHTML =
+      `<input type="checkbox" ${dlState.selectedIdx.has(i)?'checked':''} onchange="toggleEp(${i},this.checked)"/>` +
+      (epId ? `<span class="ep-id">${epId}</span>` : '') +
+      `<span class="ep-title">${escHtml(t.name||t.series_title||String(t.id))}</span>`;
+    list.appendChild(label);
+  });
+  updateSelCount();
+}
+
+function toggleEp(i, checked) { if(checked) dlState.selectedIdx.add(i); else dlState.selectedIdx.delete(i); updateSelCount(); }
+function selAll() { dlState.titles.forEach((_,i)=>dlState.selectedIdx.add(i)); renderEpisodes(); }
+function selNone() { dlState.selectedIdx.clear(); renderEpisodes(); }
+function selInvert() { dlState.titles.forEach((_,i)=>dlState.selectedIdx.has(i)?dlState.selectedIdx.delete(i):dlState.selectedIdx.add(i)); renderEpisodes(); }
+function updateSelCount() {
+  document.getElementById('sel-count').textContent = `${dlState.selectedIdx.size} of ${dlState.titles.length} selected`;
+  document.getElementById('ep-proceed-btn').disabled = dlState.selectedIdx.size === 0;
+}
+
+function buildConfirmSummary() {
+  const r = dlState.selected || {};
+  const sel = [...dlState.selectedIdx].sort((a,b)=>a-b);
+  const titles = dlState.titles;
+  let html = `<strong style="color:var(--accent)">${escHtml(dlState.service)}</strong> · ${escHtml(r.title||r.id||'')}`;
+  html += `<br/><span style="color:var(--muted)">ID:</span> <code style="color:var(--purple)">${escHtml(r.id||'')}</code>`;
+  html += `<br/><span style="color:var(--muted)">${sel.length} title(s) selected</span>`;
+  document.getElementById('dl-confirm-summary').innerHTML = html;
+}
+
+async function startDownload() {
+  const r = dlState.selected;
+  if (!r) return toast('No title selected','error');
+  const sel = [...dlState.selectedIdx].sort((a,b)=>a-b);
+  const titles = dlState.titles;
+  const quality = document.getElementById('opt-quality').value;
+  const vcodec = document.getElementById('opt-vcodec').value;
+  const acodec = document.getElementById('opt-acodec').value;
+  const range = document.getElementById('opt-range').value;
+  const slang = document.getElementById('opt-slang').value;
+  const profile = document.getElementById('opt-profile').value.trim();
+  const proxy = document.getElementById('opt-proxy').value.trim();
+
+  // Build wanted list from selected episodes
+  const episodeIds = sel.map(i => {
+    const t = titles[i];
+    if (t.type === 'episode' && t.season && t.number) {
+      return `S${String(t.season).padStart(2,'0')}E${String(t.number).padStart(2,'0')}`;
+    }
+    return null;
+  }).filter(Boolean);
+
+  // Build human-readable label for job list display
+  const showTitle = r.title || r.id;
+  const epLabel = episodeIds.length === 1 ? episodeIds[0] : (episodeIds.length > 1 ? `${episodeIds[0]}+${episodeIds.length-1}` : '');
+  const payload = {
+    service: dlState.service,
+    title_id: r.id,
+    title_label: showTitle,
+    episode_id: epLabel || null,
+  };
+  if (episodeIds.length && episodeIds.length < titles.length) payload.wanted = episodeIds;
+  if (quality) payload.quality = [parseInt(quality)];
+  if (vcodec) payload.vcodec = [vcodec];
+  if (acodec) payload.acodec = [acodec];
+  if (range) payload.range = [range];
+  if (slang) payload.s_lang = slang === 'all' ? ['all'] : [slang];
+  if (profile) payload.profile = profile;
+  if (proxy) payload.proxy = proxy;
+
+  const btn = document.getElementById('start-dl-btn');
+  btn.disabled = true; btn.textContent = '⏳ Queuing…';
+
+  try {
+    const res = await api('/unshackle/download', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    toast(`Download queued: ${res.job_id}`, 'success');
+    navigate('dashboard');
+  } catch(e) { toast('Failed: '+e.message,'error'); }
+  finally { btn.disabled=false; btn.textContent='⬇ Start Download'; }
+}
+
+async function startDirectDownload() {
+  const service = document.getElementById('dd-service').value;
+  const titleId = document.getElementById('dd-id').value.trim();
+  const wanted = document.getElementById('dd-wanted').value.trim();
+  const profile = document.getElementById('dd-profile').value.trim();
+  if (!service || !titleId) return toast('Service and ID required','error');
+  const payload = {service, title_id: titleId, title_label: titleId};
+  if (wanted) payload.wanted = wanted.split(',').map(s=>s.trim()).filter(Boolean);
+  if (profile) payload.profile = profile;
+  try {
+    const res = await api('/unshackle/download', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    toast(`Download queued: ${res.job_id}`, 'success');
+    navigate('dashboard');
+  } catch(e) { toast('Failed: '+e.message,'error'); }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// FILES
+// ═══════════════════════════════════════════════════════════════════════════
+
+let openFolders = new Set();
+
+async function loadFiles() {
+  try {
+    const { files } = await api('/downloads');
+    const c = document.getElementById('file-list');
+    if (!files || !files.length) { 
+      c.innerHTML='<div class="empty"><div class="empty-icon">📁</div>No files yet</div>'; 
+      return; 
+    }
+
+    c.innerHTML = files.map(f => {
+      const parts = f.path.split('/');
+      const depth = parts.length - 1;
+      const isVisible = depth === 0 || parts.slice(0, -1).every((_, idx) => {
+        return openFolders.has(parts.slice(0, idx + 1).join('/'));
+      });
+
+      if (!isVisible) return '';
+
+      const indent = depth * 20;
+      const icon = f.is_dir ? (openFolders.has(f.path) ? '📂' : '📁') : '🎬';
+      const toggle = f.is_dir ? 
+        `<span class="folder-toggle ${openFolders.has(f.path)?'open':''}" onclick="event.stopPropagation();toggleFolder('${escHtml(f.path)}')">${openFolders.has(f.path)?'−':'+'}</span>` 
+        : '<span class="folder-toggle"></span>';
+
+      return `
+        <div class="file-item ${f.is_dir?'is-dir':''}" style="margin-left:${indent}px" ${f.is_dir ? `onclick="toggleFolder('${escHtml(f.path)}')"` : ''}>
+          ${toggle}
+          <div style="display:flex;align-items:center;gap:10px;overflow:hidden">
+            <span style="font-size:14px">${icon}</span>
+            <span style="flex:1;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(f.name)}</span>
+          </div>
+          <span class="file-size">${f.is_dir ? '--' : fmtSize(f.size)}</span>
+          <div class="file-actions">
+            ${!f.is_dir ? `<button class="btn btn-ghost btn-sm" style="padding:4px 8px" title="Download to PC" onclick="event.stopPropagation();downloadFile('${escHtml(f.path)}')">⬇</button>` : ''}
+            <button class="btn btn-danger btn-sm" style="padding:4px 8px" title="Delete" onclick="event.stopPropagation();deleteFileItem('${escHtml(f.path)}', ${f.is_dir})">✕</button>
+          </div>
+        </div>`;
+    }).join('');
+  } catch(e) { toast('Failed: '+e.message,'error'); }
+}
+
+function toggleFolder(path) {
+  if (openFolders.has(path)) openFolders.delete(path);
+  else openFolders.add(path);
+  loadFiles();
+}
+
+function downloadFile(path) {
+  const url = `/api/downloads/get/${encodeURIComponent(path)}`;
+  // Use an invisible link to trigger browser download
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = path.split('/').pop();
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+async function deleteFileItem(path, isDir) {
+  if (!confirm(`Delete ${isDir ? 'folder and all contents' : 'file'}: ${path}?`)) return;
+  try {
+    await api(`/downloads/${encodeURIComponent(path)}`, { method: 'DELETE' });
+    toast('Deleted', 'info');
+    loadFiles();
+  } catch(e) { toast('Delete failed: ' + e.message, 'error'); }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// WVDS
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function loadWvds() {
+  try {
+    const { wvds } = await api('/wvds');
+    const c = document.getElementById('wvd-list');
+    if (!wvds.length) { c.innerHTML='<div class="empty"><div class="empty-icon">🔐</div>No WVD files</div>'; return; }
+    c.innerHTML = wvds.map(w => `
+      <div class="wvd-item ${w.active?'wvd-active':''}">
+        <span style="font-size:20px">🔐</span>
+        <span class="wvd-name">${escHtml(w.name)}</span>
+        ${w.active ? '<span class="wvd-badge">ACTIVE</span>' : ''}
+        <span style="font-size:11px;color:var(--muted)">${fmtSize(w.size)}</span>
+        ${!w.active ? `<button class="btn btn-ghost btn-sm" onclick="activateWvd('${escHtml(w.stem)}')">Set Active</button>` : ''}
+        <button class="btn btn-danger btn-sm" onclick="deleteWvd('${escHtml(w.name)}')">Delete</button>
+      </div>`).join('');
+  } catch(e) { toast('Failed: '+e.message,'error'); }
+}
+
+async function uploadWvd(input) {
+  const file = input.files[0]; if (!file) return;
+  const fd = new FormData(); fd.append('file', file);
+  try {
+    await fetch('/api/wvds/upload', {method:'POST', body:fd});
+    toast(`Uploaded ${file.name}`,'success'); loadWvds(); input.value='';
+  } catch(e) { toast('Upload failed: '+e.message,'error'); }
+}
+
+async function activateWvd(stem) {
+  try {
+    await api(`/wvds/${encodeURIComponent(stem)}/activate`, {method:'POST'});
+    toast(`Active CDM: ${stem}`,'success'); loadWvds();
+  } catch(e) { toast('Failed: '+e.message,'error'); }
+}
+
+async function deleteWvd(name) {
+  if (!confirm(`Delete ${name}?`)) return;
+  try { await api(`/wvds/${encodeURIComponent(name)}`,{method:'DELETE'}); toast('Deleted','info'); loadWvds(); }
+  catch(e) { toast('Failed: '+e.message,'error'); }
+}
+
+// Setup drag/drop for WVD zone
+const wvdZone = document.getElementById('wvd-zone');
+wvdZone.addEventListener('dragover', e=>{e.preventDefault();wvdZone.classList.add('dragover')});
+wvdZone.addEventListener('dragleave',()=>wvdZone.classList.remove('dragover'));
+wvdZone.addEventListener('drop', e=>{
+  e.preventDefault(); wvdZone.classList.remove('dragover');
+  const file=e.dataTransfer.files[0];
+  if(file&&file.name.toLowerCase().endsWith('.wvd')){
+    const i=document.getElementById('wvd-input2');
+    const dt=new DataTransfer(); dt.items.add(file); i.files=dt.files; uploadWvd(i);
+  } else toast('Only .wvd files','error');
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CREDENTIALS
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function loadCredentials() {
+  try {
+    const { credentials } = await api('/credentials');
+    const c = document.getElementById('cred-list');
+    if (!credentials.length) { c.innerHTML='<div class="empty"><div class="empty-icon">🔑</div>No credentials</div>'; return; }
+    c.innerHTML = credentials.map(cr => `
+      <div class="cred-item">
+        <span class="cred-service">${escHtml(cr.service)}</span>
+        <span class="cred-profile">${escHtml(cr.profile||'direct')}</span>
+        <span style="flex:1;font-size:12px;color:var(--muted)">${escHtml(cr.value)}</span>
+        <button class="btn btn-danger btn-sm" onclick="deleteCred('${escHtml(cr.service)}','${escHtml(cr.profile||'')}')">Delete</button>
+      </div>`).join('');
+  } catch(e) { toast('Failed: '+e.message,'error'); }
+}
+
+async function addCredential() {
+  const svc = document.getElementById('cred-svc').value.trim().toUpperCase();
+  const profile = document.getElementById('cred-profile').value.trim();
+  const user = document.getElementById('cred-user').value.trim();
+  const pass = document.getElementById('cred-pass').value.trim();
+  if (!svc||!user||!pass) return toast('Service, username and password required','error');
+  try {
+    await api('/credentials', {method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({service:svc, profile:profile||null, username:user, password:pass})});
+    toast('Credential saved','success');
+    closeModal('cred-modal');
+    ['cred-svc','cred-profile','cred-user','cred-pass'].forEach(id=>document.getElementById(id).value='');
+    loadCredentials();
+  } catch(e) { toast('Failed: '+e.message,'error'); }
+}
+
+async function deleteCred(service, profile) {
+  if (!confirm(`Delete credential for ${service}${profile?' ('+profile+')':''}?`)) return;
+  try {
+    await api('/credentials', {method:'DELETE', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({service, profile:profile||null})});
+    toast('Deleted','info'); loadCredentials();
+  } catch(e) { toast('Failed: '+e.message,'error'); }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// COOKIES
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function loadCookies() {
+  try {
+    const { cookies } = await api('/cookies');
+    const c = document.getElementById('cookie-list');
+    if (!cookies.length) { c.innerHTML='<div class="empty"><div class="empty-icon">🍪</div>No cookies</div>'; return; }
+    c.innerHTML = cookies.map(ck => `
+      <div class="cred-item">
+        <span class="cred-service">${escHtml(ck.service)}</span>
+        <span style="flex:1;font-size:12px;color:var(--muted)">${escHtml(ck.name)} · ${fmtSize(ck.size)}</span>
+        <button class="btn btn-danger btn-sm" onclick="deleteCookie('${escHtml(ck.name)}')">Delete</button>
+      </div>`).join('');
+  } catch(e) { toast('Failed: '+e.message,'error'); }
+}
+
+async function uploadCookie(input) {
+  const file = input.files[0]; if (!file) return;
+  const svc = document.getElementById('cookie-svc').value.trim().toUpperCase();
+  if (!svc) return toast('Enter a service tag first','error');
+  const fd = new FormData(); fd.append('file', file);
+  try {
+    await fetch(`/api/cookies/upload?service=${encodeURIComponent(svc)}`,{method:'POST',body:fd});
+    toast(`Cookie saved for ${svc}`,'success'); closeModal('cookie-modal'); loadCookies(); input.value='';
+  } catch(e) { toast('Failed: '+e.message,'error'); }
+}
+
+async function deleteCookie(name) {
+  if (!confirm(`Delete ${name}?`)) return;
+  try { await api(`/cookies/${encodeURIComponent(name)}`,{method:'DELETE'}); toast('Deleted','info'); loadCookies(); }
+  catch(e) { toast('Failed: '+e.message,'error'); }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SERVICES
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function loadServices() {
+  try {
+    const { services } = await api('/services');
+    const c = document.getElementById('svc-list');
+    if (!services.length) { c.innerHTML='<div class="empty"><div class="empty-icon">⬡</div>No services</div>'; return; }
+    c.innerHTML = services.map(s => {
+      const isRepo = !!s.repo;
+      const repoInfo = isRepo ? `<span style="font-size:10px;color:var(--purple)">⎇ ${escHtml(s.repo.repo_name)} · ${new Date(s.repo.last_pulled+'Z').toLocaleDateString()}</span>` : '';
+      return `<div class="svc-item">
+        <span style="font-size:20px">⬡</span>
+        <div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--accent)">${escHtml(s.name)}</div>${repoInfo}</div>
+        ${isRepo ? `<button class="btn btn-ghost btn-sm" onclick="pullSvc('${escHtml(s.repo.repo_name)}')">⎇ Pull</button>` : ''}
+        <button class="btn btn-danger btn-sm" onclick="deleteSvc('${escHtml(s.name)}')">Delete</button>
+      </div>`;
+    }).join('');
+  } catch(e) { toast('Failed: '+e.message,'error'); }
+}
+
+async function uploadSvcZip(input) {
+  const file = input.files[0]; if (!file) return;
+  const fd = new FormData(); fd.append('file', file);
+  try {
+    const r = await fetch('/api/services/upload-zip',{method:'POST',body:fd});
+    if (!r.ok) throw new Error(await r.text());
+    const d = await r.json();
+    toast(`Installed: ${(d.installed||[]).join(', ')}`,'success');
+    closeModal('svc-modal'); loadServices(); input.value='';
+  } catch(e) { toast('Upload failed: '+e.message,'error'); }
+}
+
+async function cloneRepo() {
+  const url = document.getElementById('git-url').value.trim();
+  const branch = document.getElementById('git-branch').value.trim()||'main';
+  if (!url) return toast('Enter a repo URL','error');
+  const btn = document.getElementById('clone-btn');
+  const term = document.getElementById('clone-term');
+  btn.disabled=true; btn.textContent='⏳ Cloning…';
+  term.style.display=''; term.textContent=`$ git clone ${url}\n`;
+  try {
+    const d = await api('/services/clone',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url,branch})});
+    term.textContent += `✓ ${d.message}\n`;
+    toast('Cloned!','success'); loadServices();
+  } catch(e) { term.textContent+=`✕ ${e.message}`; toast('Clone failed: '+e.message,'error'); }
+  finally { btn.disabled=false; btn.textContent='⎇ Clone'; }
+}
+
+async function pullSvc(repoName) {
+  toast(`Pulling ${repoName}…`,'info');
+  try { const d=await api(`/services/${repoName}/pull`,{method:'POST'}); toast(d.output||'Pulled!','success'); loadServices(); }
+  catch(e) { toast('Pull failed: '+e.message,'error'); }
+}
+
+async function deleteSvc(name) {
+  if (!confirm(`Delete service "${name}"?`)) return;
+  try { await api(`/services/${encodeURIComponent(name)}`,{method:'DELETE'}); toast('Deleted','info'); loadServices(); }
+  catch(e) { toast('Failed: '+e.message,'error'); }
+}
+
+// Drag/drop for service zip zone
+const svcZone = document.getElementById('svc-zip-zone');
+svcZone.addEventListener('dragover', e=>{e.preventDefault();svcZone.classList.add('dragover')});
+svcZone.addEventListener('dragleave',()=>svcZone.classList.remove('dragover'));
+svcZone.addEventListener('drop',e=>{
+  e.preventDefault();svcZone.classList.remove('dragover');
+  const file=e.dataTransfer.files[0];
+  if(file&&file.name.toLowerCase().endsWith('.zip')){
+    const i=document.getElementById('svc-zip-input');
+    const dt=new DataTransfer();dt.items.add(file);i.files=dt.files;uploadSvcZip(i);
+  } else toast('Only .zip files','error');
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function loadSettings() {
+  try {
+    const r = await api('/config/raw');
+    const content = r.content;
+    let cfg = {};
+    // Quick YAML parse for known fields (we load the raw config)
+    // For settings page we read from structured endpoints
+    const tpl = await api('/config/section/output_template');
+    const v = tpl.value || {};
+    document.getElementById('tpl-movies').value = v.movies || '';
+    document.getElementById('tpl-series').value = v.series || '';
+    document.getElementById('tpl-songs').value = v.songs || '';
+
+    const dlSec = (await api('/config/section/dl')).value || {};
+    document.getElementById('set-downloads').value = dlSec.downloads || 4;
+    document.getElementById('set-workers').value = dlSec.workers || 16;
+    document.getElementById('set-subfmt').value = dlSec.sub_format || 'srt';
+    if (dlSec.lang) document.getElementById('set-lang').value = [].concat(dlSec.lang).join(',');
+
+    const tag = (await api('/config/section/tag')).value || '';
+    document.getElementById('tpl-tag').value = tag;
+
+    const dl_sec = (await api('/config/section/downloader')).value || 'aria2c';
+    document.getElementById('set-downloader').value = typeof dl_sec === 'string' ? dl_sec : 'aria2c';
+
+    const cdm = (await api('/config/section/cdm')).value || {};
+    document.getElementById('cdm-default').value = cdm.default || '';
+
+    const mux = (await api('/config/section/muxing')).value || {};
+    document.getElementById('mux-title').checked = !!mux.set_title;
+    document.getElementById('mux-merge-audio').checked = mux.merge_audio !== false;
+
+    const sub = (await api('/config/section/subtitle')).value || {};
+    document.getElementById('sub-method').value = sub.conversion_method || 'auto';
+    document.getElementById('sub-sdh').value = sub.sdh_method || 'auto';
+    document.getElementById('sub-output').value = sub.output_mode || 'mux';
+    document.getElementById('sub-sidecar').value = sub.sidecar_format || 'srt';
+    document.getElementById('sub-strip-sdh').checked = sub.strip_sdh !== false;
+    document.getElementById('sub-convert-strip').checked = sub.convert_before_strip !== false;
+    document.getElementById('sub-preserve-fmt').checked = sub.preserve_formatting !== false;
+
+    const hdr = (await api('/config/section/headers')).value || {};
+    document.getElementById('hdr-lang').value = hdr['Accept-Language'] || 'en-US,en;q=0.8';
+    document.getElementById('hdr-ua').value = hdr['User-Agent'] || '';
+
+    const tmdb = (await api('/config/section/tmdb_api_key')).value || '';
+    document.getElementById('set-tmdb').value = tmdb;
+    const simkl = (await api('/config/section/simkl_client_id')).value || '';
+    document.getElementById('set-simkl').value = simkl;
+  } catch(e) { /* silent failures ok */ }
+}
+
+async function saveOutputSettings() {
+  try {
+    await api('/config/section/output_template', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({value:{
+      movies:document.getElementById('tpl-movies').value,
+      series:document.getElementById('tpl-series').value,
+      songs:document.getElementById('tpl-songs').value,
+    }})});
+    await api('/config/section/tag',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({value:document.getElementById('tpl-tag').value})});
+    await api('/config/section/tmdb_api_key',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({value:document.getElementById('set-tmdb').value})});
+    await api('/config/section/simkl_client_id',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({value:document.getElementById('set-simkl').value})});
+    toast('Output settings saved','success');
+  } catch(e) { toast('Failed: '+e.message,'error'); }
+}
+
+async function saveDlSettings() {
+  try {
+    const lang = document.getElementById('set-lang').value.split(',').map(s=>s.trim()).filter(Boolean);
+    await api('/config/section/dl',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({value:{
+      downloads:parseInt(document.getElementById('set-downloads').value)||4,
+      workers:parseInt(document.getElementById('set-workers').value)||16,
+      sub_format:document.getElementById('set-subfmt').value,
+      lang,
+    }})});
+    await api('/config/section/downloader',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({value:document.getElementById('set-downloader').value})});
+    await api('/config/section/aria2c',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({value:{
+      max_concurrent_downloads:parseInt(document.getElementById('aria-conc').value)||4,
+      max_connection_per_server:parseInt(document.getElementById('aria-conn').value)||3,
+      split:parseInt(document.getElementById('aria-split').value)||5,
+      file_allocation:document.getElementById('aria-alloc').value,
+    }})});
+    await api('/config/section/n_m3u8dl_re',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({value:{
+      thread_count:parseInt(document.getElementById('nm3-threads').value)||16,
+      ad_keyword:document.getElementById('nm3-adkw').value,
+      use_proxy:document.getElementById('nm3-proxy').checked,
+    }})});
+    toast('Download settings saved','success');
+  } catch(e) { toast('Failed: '+e.message,'error'); }
+}
+
+async function saveMuxSettings() {
+  try {
+    await api('/config/section/muxing',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({value:{
+      set_title:document.getElementById('mux-title').checked,
+      merge_audio:document.getElementById('mux-merge-audio').checked,
+    }})});
+    toast('Muxing settings saved','success');
+  } catch(e) { toast('Failed: '+e.message,'error'); }
+}
+
+async function saveSubSettings() {
+  try {
+    await api('/config/section/subtitle',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({value:{
+      conversion_method:document.getElementById('sub-method').value,
+      sdh_method:document.getElementById('sub-sdh').value,
+      output_mode:document.getElementById('sub-output').value,
+      sidecar_format:document.getElementById('sub-sidecar').value,
+      strip_sdh:document.getElementById('sub-strip-sdh').checked,
+      convert_before_strip:document.getElementById('sub-convert-strip').checked,
+      preserve_formatting:document.getElementById('sub-preserve-fmt').checked,
+    }})});
+    toast('Subtitle settings saved','success');
+  } catch(e) { toast('Failed: '+e.message,'error'); }
+}
+
+async function saveHeaderSettings() {
+  try {
+    await api('/config/section/headers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({value:{
+      'Accept-Language':document.getElementById('hdr-lang').value,
+      'User-Agent':document.getElementById('hdr-ua').value,
+    }})});
+    toast('Header settings saved','success');
+  } catch(e) { toast('Failed: '+e.message,'error'); }
+}
+
+async function saveCdmSettings() {
+  try {
+    const def = document.getElementById('cdm-default').value.trim();
+    await api('/config/section/cdm',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({value:{default:def}})});
+    toast('CDM settings saved','success');
+  } catch(e) { toast('Failed: '+e.message,'error'); }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CONFIG FILE
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function loadConfigRaw() {
+  try { const { content } = await api('/config/raw'); document.getElementById('config-editor').value = content; }
+  catch(e) { toast('Failed to load config: '+e.message,'error'); }
+}
+
+async function saveConfigRaw() {
+  try {
+    await api('/config/raw',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:document.getElementById('config-editor').value})});
+    toast('Config saved','success');
+  } catch(e) { toast('Failed: '+e.message,'error'); }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TOOLS
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function loadTools() {
+  try {
+    const { tools } = await api('/tools');
+    const c = document.getElementById('tool-grid');
+    c.innerHTML = Object.entries(tools).map(([name, info]) => `
+      <div class="tool-card">
+        <div class="tool-name ${info.installed?'tool-ok':'tool-miss'}">${info.installed?'✓':'✕'} ${escHtml(name)}</div>
+        <div class="tool-ver">${escHtml(info.version||'Not installed')}</div>
+      </div>`).join('');
+  } catch(e) { toast('Failed: '+e.message,'error'); }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════════════════════════
+checkAuth();
+</script>
+</body>
+</html>

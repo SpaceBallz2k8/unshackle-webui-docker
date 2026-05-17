@@ -1,0 +1,23 @@
+output_template:
+  movies: '{title}.{year}.{repack?}.{edition?}.{quality}.{source}.WEB-DL.{dual?}.{multi?}.{audio_full}.{atmos?}.{hdr?}.{hfr?}.{video?}-{tag?}'
+  series: '{title}.{year?}.{season_episode}.{episode_name?}.{repack?}.{edition?}.{quality}.{source}.WEB-DL.{dual?}.{multi?}.{audio_full}.{atmos?}.{hdr?}.{hfr?}.{video?}-{tag?}'
+  songs: '{track_number}.{title}.{repack?}.{edition?}.{source?}.WEB-DL.{audio_full}.{atmos?}-{tag?}'
+directories:
+  cache: /config/Cache
+  cookies: /config/Cookies
+  dcsl: /config/DCSL
+  downloads: /downloads
+  logs: /config/Logs
+  temp: /config/Temp
+  wvds: /config/WVDs
+  prds: /config/PRDs
+  services:
+  - /services
+  vaults: /config/vaults/
+dl:
+  best: true
+  sub_format: srt
+  downloads: 4
+  workers: 16
+cdm:
+  default: default
