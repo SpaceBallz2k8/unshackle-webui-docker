@@ -57,7 +57,6 @@ RUN mkdir -p /config/WVDs /config/Cookies /config/Cache /config/Logs \
 
 COPY entrypoint.sh /app/entrypoint.sh
 COPY strip_vaults.py /app/strip_vaults.py
-COPY patch_result.py /app/patch_result.py
 RUN chmod +x /app/entrypoint.sh
 
 EXPOSE ${WEBUI_PORT:-8080}

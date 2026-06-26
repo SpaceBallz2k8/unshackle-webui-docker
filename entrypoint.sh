@@ -100,10 +100,6 @@ PYEOF
 
 prepare_config
 
-# ── Runtime compatibility patch for result() signature changes ────────────────
-# The dev branch changes result() parameters frequently; this ensures they are
-# all optional so the API call works regardless of exact upstream version.
-$PYTHON /app/patch_result.py || true
 
 # ── Config watcher — runs AFTER initial prepare ───────────────────────────────
 # Re-runs prepare_config whenever the user edits /config/unshackle.yaml
