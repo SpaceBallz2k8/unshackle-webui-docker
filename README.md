@@ -29,13 +29,12 @@ nano .env
 
 ## .env options
 
-```env
 WEBUI_HOST=0.0.0.0       # Bind address
 WEBUI_PORT=8080           # Web UI port
 WEBUI_USERNAME=admin      # Login username
 WEBUI_PASSWORD=changeme   # Login password (change this!)
 TZ=Europe/London          # Timezone
-```
+
 
 # 3. Build and start
 docker compose up -d --build
