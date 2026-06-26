@@ -13,7 +13,7 @@ import os
 import shutil
 import zipfile
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import os
 import aiosqlite
@@ -21,7 +21,6 @@ import aiosqlite
 DB_PATH = os.environ.get("DATABASE_URL", "/data/unshackle.db")
 from fastapi import Cookie, Depends, FastAPI, File, HTTPException, Request, UploadFile, status
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, FileResponse
-from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from backend import config_manager as cfg_mgr
@@ -33,7 +32,6 @@ from backend.db import get_all_settings, get_setting, init_db, set_setting
 app = FastAPI(title="Unshackle WebUI", version="2.0.0")
 
 FRONTEND_DIR = Path(__file__).parent.parent / "frontend"
-app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR / "static")), name="static")
 
 
 @app.on_event("startup")
@@ -149,36 +147,84 @@ class DownloadRequest(BaseModel):
     title_id: str
     title_label: Optional[str] = None
     episode_id: Optional[str] = None
+    # Episode selection
     wanted: Optional[list[str]] = None
+    latest_episode: bool = False
+    # Quality / codec
     quality: Optional[list[int]] = None
-    best: bool = True
     worst: bool = False
     best_available: bool = False
     vcodec: Optional[list[str]] = None
     acodec: Optional[list[str]] = None
-    lang: Optional[list[str]] = None
-    s_lang: Optional[list[str]] = None
+    vbitrate: Optional[int] = None
+    abitrate: Optional[int] = None
+    channels: Optional[float] = None
+    no_atmos: bool = False
     range: Optional[list[str]] = None
+    # Language
+    lang: Optional[list[str]] = None
+    v_lang: Optional[list[str]] = None
+    a_lang: Optional[list[str]] = None
+    s_lang: Optional[list[str]] = None
+    require_subs: Optional[list[str]] = None
+    forced_subs: bool = False
+    exact_lang: bool = False
+    # Track selection flags
+    video_only: bool = False
+    audio_only: bool = False
+    subs_only: bool = False
+    chapters_only: bool = False
+    no_subs: bool = False
+    no_audio: bool = False
+    no_video: bool = False
+    no_chapters: bool = False
+    audio_description: bool = False
+    split_audio: bool = False
+    # Muxing / output
+    no_mux: bool = False
+    sub_format: Optional[str] = None
+    no_folder: bool = False
+    no_source: bool = False
+    repack: bool = False
+    tag: Optional[str] = None
+    tmdb_id: Optional[int] = None
+    imdb_id: Optional[str] = None
+    animeapi_id: Optional[str] = None
+    enrich: bool = False
+    output_dir: Optional[str] = None
+    # Proxy / network
     profile: Optional[str] = None
     proxy: Optional[str] = None
     no_proxy: bool = False
     no_proxy_download: bool = False
-    no_atmos: bool = False
-    video_only: bool = False
-    audio_only: bool = False
-    subs_only: bool = False
-    no_subs: bool = False
-    no_mux: bool = False
-    sub_format: Optional[str] = None
-    tag: Optional[str] = None
+    slow: Optional[Any] = None
+    # CDM / vault
+    cdm_only: Optional[bool] = None
+    skip_dl: bool = False
+    export: bool = False
+    no_cache: bool = False
+    reset_cache: bool = False
+    # Concurrency
     downloads: int = 4
     workers: int = 16
 
 
 @app.post("/api/unshackle/download", dependencies=[Depends(require_auth)])
 async def unshackle_download(req: DownloadRequest):
-    payload = {k: v for k, v in req.dict().items()
-               if v is not None and k not in ("title_label", "episode_id")}
+    # Build payload: exclude UI-only meta fields, skip None values,
+    # skip False booleans (API defaults handle them server-side)
+    exclude_keys = {"title_label", "episode_id"}
+    payload = {}
+    for k, v in req.dict().items():
+        if k in exclude_keys:
+            continue
+        if v is None:
+            continue
+        if isinstance(v, bool) and not v:
+            continue
+        if isinstance(v, list) and len(v) == 0:
+            continue
+        payload[k] = v
     try:
         result = await api.start_download(payload)
         if req.title_label and result.get("job_id"):
@@ -194,9 +240,14 @@ async def unshackle_download(req: DownloadRequest):
 
 
 @app.get("/api/unshackle/jobs", dependencies=[Depends(require_auth)])
-async def unshackle_jobs(status: Optional[str] = None, service: Optional[str] = None):
+async def unshackle_jobs(
+    status: Optional[str] = None,
+    service: Optional[str] = None,
+    sort_by: Optional[str] = None,
+    sort_order: Optional[str] = None,
+):
     try:
-        jobs = await api.list_jobs(status, service)
+        jobs = await api.list_jobs(status, service, sort_by, sort_order)
         async with aiosqlite.connect(DB_PATH) as db:
             db.row_factory = aiosqlite.Row
             async with db.execute("SELECT job_id FROM hidden_jobs") as cur:

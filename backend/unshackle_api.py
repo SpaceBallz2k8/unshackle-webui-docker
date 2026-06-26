@@ -25,7 +25,6 @@ _client: Optional[httpx.AsyncClient] = None
 def get_client() -> httpx.AsyncClient:
     global _client
     if _client is None or _client.is_closed:
-        # No auth header needed - serve runs with --no-key on localhost only
         _client = httpx.AsyncClient(
             base_url=UNSHACKLE_API_URL,
             headers={"Content-Type": "application/json"},
@@ -49,13 +48,11 @@ async def list_services() -> list[dict]:
         r = await get_client().get("/api/services")
         r.raise_for_status()
         data = r.json()
-        # Handle both {"services": [...]} and direct list [...] responses
         if isinstance(data, dict):
             services = data.get("services", [])
         else:
             services = data
-            
-        # Ensure we return a list of dicts for the UI
+
         normalized = []
         for s in services:
             if isinstance(s, str):
@@ -100,7 +97,9 @@ async def list_tracks(service: str, title_id: str, wanted: Optional[list] = None
 async def start_download(payload: dict) -> dict:
     """
     payload must include: service, title_id
-    Optional: wanted, quality, vcodec, acodec, lang, range, etc.
+    Optional: wanted, quality, vcodec, acodec, lang, range, latest_episode,
+              split_audio, repack, imdb_id, tmdb_id, no_folder, workers, downloads,
+              best_available, worst, slow, export, skip_dl, no_proxy_download, etc.
     Returns: {job_id, status, created_time}
     """
     r = await get_client().post("/api/download", json=payload)
@@ -108,12 +107,21 @@ async def start_download(payload: dict) -> dict:
     return r.json()
 
 
-async def list_jobs(status: Optional[str] = None, service: Optional[str] = None) -> list[dict]:
+async def list_jobs(
+    status: Optional[str] = None,
+    service: Optional[str] = None,
+    sort_by: Optional[str] = None,
+    sort_order: Optional[str] = None,
+) -> list[dict]:
     params: dict[str, str] = {}
     if status:
         params["status"] = status
     if service:
         params["service"] = service
+    if sort_by:
+        params["sort_by"] = sort_by
+    if sort_order:
+        params["sort_order"] = sort_order
     r = await get_client().get("/api/download/jobs", params=params)
     r.raise_for_status()
     return r.json().get("jobs", [])
