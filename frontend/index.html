@@ -139,6 +139,7 @@ select option{background:var(--bg3)}
 .log-line.error{color:var(--red)}
 .log-line.success{color:var(--green)}
 .log-line.cmd{color:var(--accent)}
+.log-line.warn{color:var(--orange)}
 
 /* ── Upload zone ── */
 .upload-zone{border:2px dashed var(--border2);border-radius:4px;padding:28px;text-align:center;cursor:pointer;transition:all .2s;color:var(--muted);font-size:13px}
@@ -362,7 +363,9 @@ select option{background:var(--bg3)}
     <div class="card">
       <div class="card-title">Download Options</div>
       <div id="dl-confirm-summary" style="font-size:13px;color:var(--muted);line-height:1.8;margin-bottom:16px"></div>
-      <div class="dl-options">
+
+      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Quality &amp; Codec</div>
+      <div class="dl-options" style="margin-bottom:14px">
         <div>
           <span class="dl-opt-label">Quality</span>
           <select id="opt-quality">
@@ -371,6 +374,26 @@ select option{background:var(--bg3)}
             <option value="1080">1080p</option>
             <option value="720">720p</option>
             <option value="480">480p</option>
+            <option value="360">360p</option>
+          </select>
+        </div>
+        <div>
+          <span class="dl-opt-label">Quality Mode</span>
+          <select id="opt-quality-mode">
+            <option value="">Best at quality</option>
+            <option value="worst">Worst (smallest file)</option>
+            <option value="best_available">Best available (fallback)</option>
+          </select>
+        </div>
+        <div>
+          <span class="dl-opt-label">HDR Range</span>
+          <select id="opt-range">
+            <option value="">SDR (default)</option>
+            <option value="HDR10">HDR10</option>
+            <option value="HDR10+">HDR10+</option>
+            <option value="DV">Dolby Vision</option>
+            <option value="HLG">HLG</option>
+            <option value="HYBRID">Hybrid</option>
           </select>
         </div>
         <div>
@@ -381,44 +404,119 @@ select option{background:var(--bg3)}
             <option value="H264">H.264/AVC</option>
             <option value="AV1">AV1</option>
             <option value="VP9">VP9</option>
-          </select>
-        </div>
-        <div>
-          <span class="dl-opt-label">HDR Range</span>
-          <select id="opt-range">
-            <option value="">SDR (default)</option>
-            <option value="HDR10">HDR10</option>
-            <option value="DV">Dolby Vision</option>
-            <option value="HLG">HLG</option>
+            <option value="VP8">VP8</option>
+            <option value="VC1">VC1</option>
           </select>
         </div>
         <div>
           <span class="dl-opt-label">Audio Codec</span>
           <select id="opt-acodec">
             <option value="">Any</option>
-            <option value="EC3">E-AC3 (Dolby)</option>
-            <option value="AAC">AAC</option>
+            <option value="EC3">E-AC3 (Atmos)</option>
+            <option value="AC4">AC4</option>
             <option value="AC3">AC3</option>
+            <option value="AAC">AAC</option>
+            <option value="OPUS">OPUS</option>
             <option value="FLAC">FLAC</option>
+            <option value="ALAC">ALAC</option>
+            <option value="DTS">DTS</option>
           </select>
         </div>
         <div>
-          <span class="dl-opt-label">Subtitles</span>
+          <span class="dl-opt-label">Audio Channels</span>
+          <select id="opt-channels">
+            <option value="">Any</option>
+            <option value="2.0">Stereo (2.0)</option>
+            <option value="5.1">5.1</option>
+            <option value="7.1">7.1</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Language &amp; Subtitles</div>
+      <div class="dl-options" style="margin-bottom:10px">
+        <div>
+          <span class="dl-opt-label">Audio Language</span>
+          <input type="text" id="opt-lang" placeholder="orig (default), en, fr…"/>
+        </div>
+        <div>
+          <span class="dl-opt-label">Subtitle Language</span>
           <select id="opt-slang">
             <option value="all">All languages</option>
             <option value="en">English only</option>
+            <option value="fr">French only</option>
+            <option value="de">German only</option>
+            <option value="es">Spanish only</option>
             <option value="">None</option>
           </select>
         </div>
         <div>
+          <span class="dl-opt-label">Subtitle Format</span>
+          <select id="opt-sub-format">
+            <option value="">Default</option>
+            <option value="SRT">SRT</option>
+            <option value="VTT">VTT</option>
+            <option value="ASS">ASS</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+        <label class="check-row"><input type="checkbox" id="opt-no-atmos"/> No Atmos</label>
+        <label class="check-row"><input type="checkbox" id="opt-forced-subs"/> Forced Subs</label>
+        <label class="check-row"><input type="checkbox" id="opt-no-subs"/> No Subs</label>
+        <label class="check-row"><input type="checkbox" id="opt-no-audio"/> No Audio</label>
+        <label class="check-row"><input type="checkbox" id="opt-no-chapters"/> No Chapters</label>
+        <label class="check-row"><input type="checkbox" id="opt-split-audio"/> Split Audio Codecs</label>
+        <label class="check-row"><input type="checkbox" id="opt-audio-desc"/> Audio Description</label>
+      </div>
+
+      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Output &amp; Tagging</div>
+      <div class="dl-options" style="margin-bottom:10px">
+        <div>
+          <span class="dl-opt-label">Group Tag</span>
+          <input type="text" id="opt-tag" placeholder="YOURNAMETAG"/>
+        </div>
+        <div>
+          <span class="dl-opt-label">IMDB ID</span>
+          <input type="text" id="opt-imdb-id" placeholder="tt1234567"/>
+        </div>
+        <div>
+          <span class="dl-opt-label">TMDB ID</span>
+          <input type="number" id="opt-tmdb-id" placeholder="12345"/>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+        <label class="check-row"><input type="checkbox" id="opt-no-mux"/> No Mux</label>
+        <label class="check-row"><input type="checkbox" id="opt-no-folder"/> No Folder</label>
+        <label class="check-row"><input type="checkbox" id="opt-no-source"/> No Source Tag</label>
+        <label class="check-row"><input type="checkbox" id="opt-repack"/> REPACK</label>
+        <label class="check-row"><input type="checkbox" id="opt-enrich"/> Enrich Title</label>
+        <label class="check-row"><input type="checkbox" id="opt-latest-ep"/> Latest Episode Only</label>
+      </div>
+
+      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Advanced</div>
+      <div class="dl-options" style="margin-bottom:10px">
+        <div>
           <span class="dl-opt-label">Profile</span>
           <input type="text" id="opt-profile" placeholder="default"/>
         </div>
+        <div>
+          <span class="dl-opt-label">Proxy</span>
+          <input type="text" id="opt-proxy" placeholder="GB or socks5://…"/>
+        </div>
+        <div>
+          <span class="dl-opt-label">Slow Mode (delay)</span>
+          <input type="text" id="opt-slow" placeholder="off — or e.g. 20-40"/>
+        </div>
       </div>
-      <div class="form-group">
-        <label>Proxy (optional)</label>
-        <input type="text" id="opt-proxy" placeholder="e.g. GB or socks5://…"/>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+        <label class="check-row"><input type="checkbox" id="opt-no-proxy"/> No Proxy</label>
+        <label class="check-row"><input type="checkbox" id="opt-no-proxy-dl"/> No Proxy (segments only)</label>
+        <label class="check-row"><input type="checkbox" id="opt-skip-dl"/> Skip DL (keys only)</label>
+        <label class="check-row"><input type="checkbox" id="opt-export"/> Export Manifest</label>
+        <label class="check-row"><input type="checkbox" id="opt-no-cache"/> No Cache</label>
       </div>
+
       <div style="display:flex;gap:10px;margin-top:4px">
         <button class="btn btn-ghost btn-sm" onclick="gotoStep(2)">‹ Back</button>
         <button class="btn btn-primary" id="start-dl-btn" onclick="startDownload()">⬇ Start Download</button>
@@ -460,10 +558,29 @@ select option{background:var(--bg3)}
 <div class="page" id="page-jobs">
   <div class="section-header">
     <span class="section-title">All Jobs</span>
-    <div class="btn-group">
+    <div class="btn-group" style="flex-wrap:wrap;gap:6px">
+      <select id="jobs-filter-status" onchange="loadJobs()" style="font-size:12px;padding:4px 8px;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px">
+        <option value="">All statuses</option>
+        <option value="queued">Queued</option>
+        <option value="downloading">Downloading</option>
+        <option value="completed">Completed</option>
+        <option value="failed">Failed</option>
+        <option value="cancelled">Cancelled</option>
+      </select>
+      <select id="jobs-sort-by" onchange="loadJobs()" style="font-size:12px;padding:4px 8px;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px">
+        <option value="created_time">Sort: Created</option>
+        <option value="started_time">Sort: Started</option>
+        <option value="completed_time">Sort: Completed</option>
+        <option value="status">Sort: Status</option>
+        <option value="service">Sort: Service</option>
+      </select>
+      <select id="jobs-sort-order" onchange="loadJobs()" style="font-size:12px;padding:4px 8px;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px">
+        <option value="desc">↓ Newest first</option>
+        <option value="asc">↑ Oldest first</option>
+      </select>
       <button class="btn btn-ghost btn-sm" onclick="loadJobs()">↻ Refresh</button>
-      <button class="btn btn-ghost btn-sm" onclick="clearJobs('completed')">✓ Completed</button>
-      <button class="btn btn-ghost btn-sm" onclick="clearJobs('failed')">✕ Failed</button>
+      <button class="btn btn-ghost btn-sm" onclick="clearJobs('completed')">✓ Clear Completed</button>
+      <button class="btn btn-ghost btn-sm" onclick="clearJobs('failed')">✕ Clear Failed</button>
       <button class="btn btn-danger btn-sm" onclick="clearJobs('all')">⚠ Clear All</button>
     </div>
   </div>
@@ -982,29 +1099,37 @@ async function loadDashboard() {
 
 function jobHtml(j) {
   const pct = Math.round(j.progress || 0);
-  // Build a nice display title: prefer our stored label, fall back to title_id
   const label = j.title_label || j.title_id || '';
   const epTag = j.episode_id
     ? `<span style="color:var(--purple);font-size:11px;font-weight:700;margin-left:6px">${escHtml(j.episode_id)}</span>`
     : '';
-  // Progress bar — only when actually downloading
-  const bar = j.status === 'downloading'
-    ? `<div class="progress-bar-wrap" style="margin-top:6px">
+  // Progress bar with real speed/phase info from the API
+  let bar = '';
+  if (j.status === 'downloading') {
+    const phase = j.phase ? escHtml(j.phase) : `${pct}%`;
+    const speedStr = j.speed ? ` · <span style="color:var(--accent)">${escHtml(j.speed)}</span>` : '';
+    const segStr = j.segments_total > 0
+      ? ` · <span style="color:var(--muted2)">${Math.round(j.segments_done)}/${Math.round(j.segments_total)} segs</span>` : '';
+    bar = `<div class="progress-bar-wrap" style="margin-top:6px">
         <div class="progress-bar-fill" style="width:${pct}%"></div>
        </div>
-       <div style="font-size:10px;color:var(--muted);margin-top:3px">${pct}% — speed not available via API</div>`
-    : '';
+       <div style="font-size:10px;margin-top:3px;color:var(--muted)">${phase}${speedStr}${segStr}</div>`;
+  }
   const outFiles = (j.output_files || []);
   const fileInfo = outFiles.length
     ? `<div style="font-size:10px;color:var(--green);margin-top:3px">📁 ${escHtml(outFiles[outFiles.length-1].split('/').pop())}</div>`
     : '';
-  return `<div class="job-item ${j.status}" onclick="openJobModal('${j.job_id}','${escHtml(label)}')">
+  const skipped = (j.skipped_subtitles || []);
+  const skipInfo = skipped.length
+    ? `<div style="font-size:10px;color:var(--orange);margin-top:2px">⚠ ${skipped.length} subtitle(s) skipped</div>`
+    : '';
+  return `<div class="job-item ${j.status}" onclick="openJobModal('${j.job_id}','${escHtml(label).replace(/'/g,"\\'")}')">
     <div style="min-width:0;flex:1">
       <div class="job-title">
         <span class="service-tag">${escHtml(j.service)}</span>${escHtml(label)}${epTag}
       </div>
       <div class="job-meta">${new Date(j.created_time).toLocaleString()}</div>
-      ${bar}${fileInfo}
+      ${bar}${fileInfo}${skipInfo}
     </div>
     <span class="badge badge-${j.status}" style="flex-shrink:0">${j.status}</span>
     <button class="btn btn-danger btn-sm" style="flex-shrink:0" onclick="event.stopPropagation();cancelJobById('${j.job_id}')">✕</button>
@@ -1017,7 +1142,14 @@ function jobHtml(j) {
 
 async function loadJobs() {
   try {
-    const { jobs } = await api('/unshackle/jobs');
+    const status   = document.getElementById('jobs-filter-status')?.value || '';
+    const sortBy   = document.getElementById('jobs-sort-by')?.value || 'created_time';
+    const sortOrder= document.getElementById('jobs-sort-order')?.value || 'desc';
+    const params   = new URLSearchParams();
+    if (status)    params.set('status', status);
+    if (sortBy)    params.set('sort_by', sortBy);
+    if (sortOrder) params.set('sort_order', sortOrder);
+    const { jobs } = await api('/unshackle/jobs?' + params.toString());
     const c = document.getElementById('all-jobs');
     c.innerHTML = jobs.length ? jobs.map(jobHtml).join('') :
       '<div class="empty"><div class="empty-icon">≡</div>No jobs</div>';
@@ -1063,7 +1195,9 @@ function pollJobModal(id) {
   if (jobPollInterval) clearInterval(jobPollInterval);
   const term = document.getElementById('job-modal-term');
   let lastStatus = '';
+  let lastPhase  = '';
   let shownFiles = false;
+  let shownSkipped = false;
 
   const tick = async () => {
     try {
@@ -1071,22 +1205,42 @@ function pollJobModal(id) {
       document.getElementById('job-modal-badge').innerHTML =
         `<span class="badge badge-${job.status}">${job.status}</span>`;
       const pct = Math.round(job.progress || 0);
-      document.getElementById('job-modal-progress').textContent = pct > 0 && pct < 100 ? `${pct}%` : '';
+
+      // Progress bar + live stats
+      const speedStr = job.speed ? ` · ${job.speed}` : '';
+      const segsStr  = job.segments_total > 0
+        ? ` · ${Math.round(job.segments_done)}/${Math.round(job.segments_total)} segs` : '';
+      const phaseStr = job.phase || (pct > 0 && pct < 100 ? `${pct}%` : '');
+      document.getElementById('job-modal-progress').textContent =
+        phaseStr ? phaseStr + speedStr + segsStr : '';
       document.getElementById('job-modal-progfill').style.width = `${pct}%`;
 
+      // Status change line
       if (job.status !== lastStatus) {
         if (job.title_label) addTermLine(term, `▸ ${job.title_label}${job.episode_id ? ' · ' + job.episode_id : ''}`, '');
         addTermLine(term, `▸ Status: ${job.status}`, job.status === 'failed' ? 'error' : 'success');
         lastStatus = job.status;
       }
 
+      // Phase change line (muxing, decrypting, etc.)
+      if (job.phase && job.phase !== lastPhase) {
+        addTermLine(term, `  ⟳ ${job.phase}`, '');
+        lastPhase = job.phase;
+      }
+
       if (job.error_message) addTermLine(term, `✕ ${job.error_message}`, 'error');
       if (job.error_details && job.error_details !== job.error_message)
         addTermLine(term, `  ${job.error_details}`, 'error');
 
-      if (job.status === 'completed' && !shownFiles && (job.output_files||[]).length) {
-        job.output_files.forEach(f => addTermLine(term, `✓ ${f.split('/').pop()}`, 'success'));
-        shownFiles = true;
+      if (job.status === 'completed') {
+        if (!shownFiles && (job.output_files||[]).length) {
+          job.output_files.forEach(f => addTermLine(term, `✓ ${f.split('/').pop()}`, 'success'));
+          shownFiles = true;
+        }
+        if (!shownSkipped && (job.skipped_subtitles||[]).length) {
+          job.skipped_subtitles.forEach(s => addTermLine(term, `⚠ Subtitle skipped: ${s}`, 'warn'));
+          shownSkipped = true;
+        }
       }
 
       if (job.status !== 'queued' && job.status !== 'downloading') {
@@ -1273,13 +1427,44 @@ async function startDownload() {
   if (!r) return toast('No title selected','error');
   const sel = [...dlState.selectedIdx].sort((a,b)=>a-b);
   const titles = dlState.titles;
-  const quality = document.getElementById('opt-quality').value;
-  const vcodec = document.getElementById('opt-vcodec').value;
-  const acodec = document.getElementById('opt-acodec').value;
-  const range = document.getElementById('opt-range').value;
-  const slang = document.getElementById('opt-slang').value;
-  const profile = document.getElementById('opt-profile').value.trim();
-  const proxy = document.getElementById('opt-proxy').value.trim();
+
+  // Read all option fields
+  const quality      = document.getElementById('opt-quality').value;
+  const qualityMode  = document.getElementById('opt-quality-mode').value;
+  const vcodec       = document.getElementById('opt-vcodec').value;
+  const acodec       = document.getElementById('opt-acodec').value;
+  const channels     = document.getElementById('opt-channels').value;
+  const range        = document.getElementById('opt-range').value;
+  const lang         = document.getElementById('opt-lang').value.trim();
+  const slang        = document.getElementById('opt-slang').value;
+  const subFmt       = document.getElementById('opt-sub-format').value;
+  const profile      = document.getElementById('opt-profile').value.trim();
+  const proxy        = document.getElementById('opt-proxy').value.trim();
+  const slowRaw      = document.getElementById('opt-slow').value.trim();
+  const tag          = document.getElementById('opt-tag').value.trim();
+  const imdbId       = document.getElementById('opt-imdb-id').value.trim();
+  const tmdbId       = document.getElementById('opt-tmdb-id').value.trim();
+
+  // Checkboxes
+  const cb = id => document.getElementById(id).checked;
+  const noAtmos      = cb('opt-no-atmos');
+  const forcedSubs   = cb('opt-forced-subs');
+  const noSubs       = cb('opt-no-subs');
+  const noAudio      = cb('opt-no-audio');
+  const noChapters   = cb('opt-no-chapters');
+  const splitAudio   = cb('opt-split-audio');
+  const audioDesc    = cb('opt-audio-desc');
+  const noMux        = cb('opt-no-mux');
+  const noFolder     = cb('opt-no-folder');
+  const noSource     = cb('opt-no-source');
+  const repack       = cb('opt-repack');
+  const enrich       = cb('opt-enrich');
+  const latestEp     = cb('opt-latest-ep');
+  const noProxy      = cb('opt-no-proxy');
+  const noProxyDl    = cb('opt-no-proxy-dl');
+  const skipDl       = cb('opt-skip-dl');
+  const exportManif  = cb('opt-export');
+  const noCache      = cb('opt-no-cache');
 
   // Build wanted list from selected episodes
   const episodeIds = sel.map(i => {
@@ -1290,23 +1475,66 @@ async function startDownload() {
     return null;
   }).filter(Boolean);
 
-  // Build human-readable label for job list display
   const showTitle = r.title || r.id;
   const epLabel = episodeIds.length === 1 ? episodeIds[0] : (episodeIds.length > 1 ? `${episodeIds[0]}+${episodeIds.length-1}` : '');
+
   const payload = {
-    service: dlState.service,
-    title_id: r.id,
+    service:     dlState.service,
+    title_id:    r.id,
     title_label: showTitle,
-    episode_id: epLabel || null,
+    episode_id:  epLabel || null,
   };
+
+  // Wanted
   if (episodeIds.length && episodeIds.length < titles.length) payload.wanted = episodeIds;
+  if (latestEp) payload.latest_episode = true;
+
+  // Quality
   if (quality) payload.quality = [parseInt(quality)];
-  if (vcodec) payload.vcodec = [vcodec];
-  if (acodec) payload.acodec = [acodec];
-  if (range) payload.range = [range];
+  if (qualityMode === 'worst')          payload.worst = true;
+  else if (qualityMode === 'best_available') payload.best_available = true;
+
+  // Codec / format
+  if (vcodec)    payload.vcodec   = [vcodec];
+  if (acodec)    payload.acodec   = [acodec];
+  if (channels)  payload.channels = parseFloat(channels);
+  if (range)     payload.range    = [range];
+
+  // Language
+  if (lang)  payload.lang   = [lang];
   if (slang) payload.s_lang = slang === 'all' ? ['all'] : [slang];
-  if (profile) payload.profile = profile;
-  if (proxy) payload.proxy = proxy;
+
+  // Track flags
+  if (noAtmos)    payload.no_atmos           = true;
+  if (forcedSubs) payload.forced_subs        = true;
+  if (noSubs)     payload.no_subs            = true;
+  if (noAudio)    payload.no_audio           = true;
+  if (noChapters) payload.no_chapters        = true;
+  if (splitAudio) payload.split_audio        = true;
+  if (audioDesc)  payload.audio_description  = true;
+
+  // Output
+  if (subFmt)  payload.sub_format = subFmt;
+  if (tag)     payload.tag        = tag;
+  if (imdbId)  payload.imdb_id    = imdbId;
+  if (tmdbId)  payload.tmdb_id    = parseInt(tmdbId);
+  if (noMux)   payload.no_mux     = true;
+  if (noFolder) payload.no_folder = true;
+  if (noSource) payload.no_source = true;
+  if (repack)   payload.repack    = true;
+  if (enrich)   payload.enrich    = true;
+
+  // Network
+  if (profile)    payload.profile          = profile;
+  if (proxy)      payload.proxy            = proxy;
+  if (noProxy)    payload.no_proxy         = true;
+  if (noProxyDl)  payload.no_proxy_download = true;
+  if (slowRaw)    payload.slow             = slowRaw;
+
+  // Advanced
+  if (skipDl)    payload.skip_dl   = true;
+  if (exportManif) payload.export  = true;
+  if (noCache)   payload.no_cache  = true;
 
   const btn = document.getElementById('start-dl-btn');
   btn.disabled = true; btn.textContent = '⏳ Queuing…';
