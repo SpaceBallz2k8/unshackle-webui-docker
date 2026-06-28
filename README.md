@@ -27,15 +27,6 @@ cd unshackle-webui-docker
 # 2. Edit .env (set your username/password and port)
 nano .env
 
-## .env options
-
-WEBUI_HOST=0.0.0.0       # Bind address
-WEBUI_PORT=8080           # Web UI port
-WEBUI_USERNAME=admin      # Login username
-WEBUI_PASSWORD=changeme   # Login password (change this!)
-TZ=Europe/London          # Timezone
-
-
 # 3. Build and start
 docker compose up -d --build
 
@@ -50,7 +41,7 @@ On first login:
 2. Go to **Credentials** and add your service login details
 3. Go to **Services** and upload your service modules (zip or git repo)
 4. Go to **Settings** to configure output templates, CDM, and download options
-5. Restart the container to refresh services & Start downloading from the **Download** tab
+5. Start downloading from the **Download** tab
 
 ## Directory structure
 
@@ -81,7 +72,15 @@ All configuration is done through the web UI:
 - **Settings** — Output templates, download options, muxing, subtitles, headers, CDM
 - **Config File** — Raw YAML editor for advanced configuration
 
+## .env options
 
+```env
+WEBUI_HOST=0.0.0.0       # Bind address
+WEBUI_PORT=8080           # Web UI port
+WEBUI_USERNAME=admin      # Login username
+WEBUI_PASSWORD=changeme   # Login password (change this!)
+TZ=Europe/London          # Timezone
+```
 
 ## Updating unshackle
 
