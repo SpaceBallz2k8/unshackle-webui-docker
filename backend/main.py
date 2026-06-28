@@ -54,7 +54,11 @@ async def startup():
 
 @app.get("/", response_class=HTMLResponse)
 async def index(session: Optional[str] = Cookie(None)):
-    return (FRONTEND_DIR / "index.html").read_text()
+    content = (FRONTEND_DIR / "index.html").read_text()
+    return HTMLResponse(content=content, headers={
+        "Cache-Control": "no-store, no-cache, must-revalidate",
+        "Pragma": "no-cache",
+    })
 
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
@@ -356,7 +360,50 @@ async def set_section(key: str, payload: dict):
     return {"saved": True}
 
 
-# ── Credentials ───────────────────────────────────────────────────────────────
+# ── Proxy Providers ───────────────────────────────────────────────────────────
+
+@app.get("/api/proxy/providers", dependencies=[Depends(require_auth)])
+async def get_proxy_providers():
+    return {"providers": cfg_mgr.get_proxy_providers()}
+
+
+class ProxyProviderRequest(BaseModel):
+    name: str
+    data: Optional[dict] = None
+
+
+@app.post("/api/proxy/providers", dependencies=[Depends(require_auth)])
+async def set_proxy_provider(req: ProxyProviderRequest):
+    cfg_mgr.set_proxy_provider(req.name, req.data)
+    return {"saved": True}
+
+
+@app.delete("/api/proxy/providers/{name}", dependencies=[Depends(require_auth)])
+async def delete_proxy_provider(name: str):
+    cfg_mgr.set_proxy_provider(name, None)
+    return {"deleted": True}
+
+
+# ── VPN cookie/credential files ───────────────────────────────────────────────
+
+@app.get("/api/proxy/vpn-files", dependencies=[Depends(require_auth)])
+async def list_vpn_files():
+    return {"files": cfg_mgr.list_vpn_files()}
+
+
+@app.post("/api/proxy/vpn-files", dependencies=[Depends(require_auth)])
+async def upload_vpn_file(file: UploadFile):
+    data = await file.read()
+    cfg_mgr.save_vpn_file(file.filename, data)
+    return {"saved": True, "name": file.filename}
+
+
+@app.delete("/api/proxy/vpn-files/{filename}", dependencies=[Depends(require_auth)])
+async def delete_vpn_file(filename: str):
+    cfg_mgr.delete_vpn_file(filename)
+    return {"deleted": True}
+
+
 
 @app.get("/api/credentials", dependencies=[Depends(require_auth)])
 async def list_credentials():

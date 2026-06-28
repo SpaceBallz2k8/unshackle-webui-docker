@@ -151,4 +151,56 @@ def update_sections(updates: dict):
     _save(cfg)
 
 
-from typing import Optional
+
+# ── Proxy Providers ───────────────────────────────────────────────────────────
+
+PROXY_VPN_DIR = Path("/config/vpn")
+
+
+def get_proxy_providers() -> dict:
+    """Return the proxy_providers section from config."""
+    return _load().get("proxy_providers", {})
+
+
+def set_proxy_providers(providers: dict):
+    """Replace the entire proxy_providers section and save."""
+    cfg = _load()
+    if providers:
+        cfg["proxy_providers"] = providers
+    else:
+        cfg.pop("proxy_providers", None)
+    _save(cfg)
+
+
+def set_proxy_provider(name: str, data: dict | None):
+    """Set or delete a single provider by key name."""
+    cfg = _load()
+    providers = cfg.setdefault("proxy_providers", {})
+    if data is None:
+        providers.pop(name, None)
+        if not providers:
+            cfg.pop("proxy_providers", None)
+    else:
+        providers[name] = data
+    _save(cfg)
+
+
+# ── VPN cookie/credential files ───────────────────────────────────────────────
+
+def list_vpn_files() -> list[dict]:
+    PROXY_VPN_DIR.mkdir(parents=True, exist_ok=True)
+    return [
+        {"name": f.name, "size": f.stat().st_size}
+        for f in sorted(PROXY_VPN_DIR.iterdir()) if f.is_file()
+    ]
+
+
+def save_vpn_file(filename: str, data: bytes):
+    PROXY_VPN_DIR.mkdir(parents=True, exist_ok=True)
+    (PROXY_VPN_DIR / filename).write_bytes(data)
+
+
+def delete_vpn_file(filename: str):
+    p = PROXY_VPN_DIR / filename
+    if p.exists():
+        p.unlink()
