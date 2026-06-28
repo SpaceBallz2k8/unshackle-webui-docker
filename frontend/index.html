@@ -178,8 +178,9 @@ select option{background:var(--bg3)}
 .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
 
 /* ── Tabs ── */
-.tab-bar{display:flex;border-bottom:1px solid var(--border);margin-bottom:18px}
-.tab{padding:8px 16px;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:all .15s}
+.tab-bar{display:flex;flex-wrap:nowrap;overflow-x:auto;overflow-y:visible;border-bottom:1px solid var(--border);margin-bottom:18px;scrollbar-width:none}
+.tab-bar::-webkit-scrollbar{display:none}
+.tab{padding:8px 12px;font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;flex-shrink:0}
 .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
 .tab-panel{display:none}.tab-panel.active{display:block}
 
@@ -264,6 +265,7 @@ select option{background:var(--bg3)}
       <div class="nav-item" data-page="credentials">🔑 Credentials</div>
       <div class="nav-item" data-page="cookies">🍪 Cookies</div>
       <div class="nav-item" data-page="services">⬡ Services</div>
+      <div class="nav-item" data-page="vpn">🌐 VPN / Proxy</div>
       <div class="nav-section">Config</div>
       <div class="nav-item" data-page="settings">⚙ Settings</div>
       <div class="nav-item" data-page="config">📝 Config File</div>
@@ -667,6 +669,154 @@ select option{background:var(--bg3)}
 </div>
 
 <!-- ── SETTINGS ── -->
+<!-- ── VPN / PROXY PAGE ── -->
+<div class="page" id="page-vpn">
+  <div class="section-header">
+    <span class="section-title">VPN / Proxy Providers</span>
+  </div>
+
+  <!-- Basic (static proxy list) -->
+  <div class="card">
+    <div class="card-title">Basic Proxy
+      <span style="font-size:11px;font-weight:400;color:var(--muted);margin-left:8px">Static proxy list per country code</span>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.7">
+      Map country codes to one or more proxy URIs. Each entry is a country code (e.g. <code style="color:var(--accent)">gb</code>, <code style="color:var(--accent)">us</code>) with one URL or a list.
+      Use in download options as <code style="color:var(--accent)">gb</code> or <code style="color:var(--accent)">us</code>.
+    </p>
+    <div id="basic-proxy-rows"></div>
+    <button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="addBasicProxyRow()">+ Add Entry</button>
+    <div style="margin-top:12px">
+      <button class="btn btn-primary btn-sm" onclick="saveBasicProxy()">Save Basic Proxy</button>
+      <button class="btn btn-danger btn-sm" style="margin-left:8px" onclick="deleteProvider('basic')">Remove Provider</button>
+    </div>
+  </div>
+
+  <!-- NordVPN -->
+  <div class="card">
+    <div class="card-title">NordVPN
+      <span style="font-size:11px;font-weight:400;color:var(--muted);margin-left:8px">Use as <code>nordvpn:gb</code> or just <code>gb</code></span>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.7">
+      Requires <strong>service credentials</strong> (not your login) from
+      <a href="https://my.nordaccount.com/dashboard/nordvpn/" target="_blank" style="color:var(--accent)">nordaccount.com</a>.
+    </p>
+    <div class="form-grid">
+      <div class="form-group"><label>Service Username</label><input type="text" id="nord-user" placeholder="service credential username"/></div>
+      <div class="form-group"><label>Service Password</label><input type="password" id="nord-pass" placeholder="service credential password"/></div>
+    </div>
+    <div style="margin-top:4px">
+      <button class="btn btn-primary btn-sm" onclick="saveNordVPN()">Save NordVPN</button>
+      <button class="btn btn-danger btn-sm" style="margin-left:8px" onclick="deleteProvider('nordvpn')">Remove</button>
+    </div>
+  </div>
+
+  <!-- SurfsharkVPN -->
+  <div class="card">
+    <div class="card-title">SurfsharkVPN
+      <span style="font-size:11px;font-weight:400;color:var(--muted);margin-left:8px">Use as <code>surfsharkvpn:gb</code> or just <code>gb</code></span>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.7">
+      Requires <strong>service credentials</strong> from
+      <a href="https://my.surfshark.com/vpn/manual-setup/main/openvpn" target="_blank" style="color:var(--accent)">surfshark.com</a>.
+    </p>
+    <div class="form-grid">
+      <div class="form-group"><label>Service Username</label><input type="text" id="surf-user" placeholder="service credential username"/></div>
+      <div class="form-group"><label>Service Password</label><input type="password" id="surf-pass" placeholder="service credential password"/></div>
+    </div>
+    <div style="margin-top:4px">
+      <button class="btn btn-primary btn-sm" onclick="saveSurfshark()">Save SurfsharkVPN</button>
+      <button class="btn btn-danger btn-sm" style="margin-left:8px" onclick="deleteProvider('surfsharkvpn')">Remove</button>
+    </div>
+  </div>
+
+  <!-- WindscribeVPN -->
+  <div class="card">
+    <div class="card-title">WindscribeVPN
+      <span style="font-size:11px;font-weight:400;color:var(--muted);margin-left:8px">Use as <code>windscribevpn:gb</code> or just <code>gb</code></span>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.7">
+      OpenVPN credentials from
+      <a href="https://windscribe.com/getconfig/openvpn" target="_blank" style="color:var(--accent)">windscribe.com/getconfig/openvpn</a>.
+    </p>
+    <div class="form-grid">
+      <div class="form-group"><label>Username</label><input type="text" id="wind-user" placeholder="windscribe username"/></div>
+      <div class="form-group"><label>Password</label><input type="password" id="wind-pass" placeholder="windscribe password"/></div>
+    </div>
+    <div style="margin-top:4px">
+      <button class="btn btn-primary btn-sm" onclick="saveWindscribe()">Save WindscribeVPN</button>
+      <button class="btn btn-danger btn-sm" style="margin-left:8px" onclick="deleteProvider('windscribevpn')">Remove</button>
+    </div>
+  </div>
+
+  <!-- ProtonVPN -->
+  <div class="card">
+    <div class="card-title">ProtonVPN
+      <span style="font-size:11px;font-weight:400;color:var(--muted);margin-left:8px">Use as <code>protonvpn:gb</code> or just <code>gb</code></span>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.7">
+      Upload a <code style="color:var(--accent)">protonvpn.txt</code> cookie file below, then optionally set a server map for pinned servers.
+    </p>
+    <div class="form-group">
+      <label>Server Map (optional JSON — e.g. <code style="color:var(--accent)">{"gb":"uk-lon-01"}</code>)</label>
+      <textarea id="proton-map" style="height:60px;font-family:monospace;font-size:12px" placeholder='{"gb": "uk-lon-01", "us": "us-ny-01"}'></textarea>
+    </div>
+    <div style="margin-top:4px">
+      <button class="btn btn-primary btn-sm" onclick="saveProtonVPN()">Save ProtonVPN</button>
+      <button class="btn btn-danger btn-sm" style="margin-left:8px" onclick="deleteProvider('protonvpn')">Remove</button>
+    </div>
+  </div>
+
+  <!-- ExpressVPN -->
+  <div class="card">
+    <div class="card-title">ExpressVPN
+      <span style="font-size:11px;font-weight:400;color:var(--muted);margin-left:8px">Use as <code>expressvpn:gb</code> or just <code>gb</code></span>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.7">
+      Upload an <code style="color:var(--accent)">expressvpn.txt</code> cookie file below, then optionally set a region map.
+    </p>
+    <div class="form-group">
+      <label>Region Map (optional JSON — e.g. <code style="color:var(--accent)">{"gb":"london","us":"ny"}</code>)</label>
+      <textarea id="express-region-map" style="height:60px;font-family:monospace;font-size:12px" placeholder='{"gb": "london", "us": "ny"}'></textarea>
+    </div>
+    <div style="margin-top:4px">
+      <button class="btn btn-primary btn-sm" onclick="saveExpressVPN()">Save ExpressVPN</button>
+      <button class="btn btn-danger btn-sm" style="margin-left:8px" onclick="deleteProvider('expressvpn')">Remove</button>
+    </div>
+  </div>
+
+  <!-- Hola VPN -->
+  <div class="card" style="border:1px solid var(--border)">
+    <div class="card-title">Hola VPN
+      <span style="font-size:11px;font-weight:400;color:var(--muted);margin-left:8px">Auto-detected when HolaProxy binary is present</span>
+    </div>
+    <p style="font-size:12px;color:var(--muted);line-height:1.7">
+      Automatically enabled when the <code style="color:var(--accent)">HolaProxy</code> binary is in unshackle's binaries path. No config needed. Use as <code style="color:var(--accent)">hola:gb</code> or just <code style="color:var(--accent)">gb</code>.
+    </p>
+  </div>
+
+  <!-- VPN cookie / credential files -->
+  <div class="card">
+    <div class="card-title">VPN Cookie &amp; Credential Files
+      <span style="font-size:11px;font-weight:400;color:var(--muted);margin-left:8px">Stored in <code>/config/vpn/</code></span>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.7">
+      Upload cookie files for ExpressVPN (<code style="color:var(--accent)">expressvpn.txt</code>) and ProtonVPN (<code style="color:var(--accent)">protonvpn.txt</code>). Providers auto-detect these files at runtime.
+    </p>
+    <div id="vpn-files-list" style="margin-bottom:12px"></div>
+    <label class="btn btn-ghost btn-sm" style="cursor:pointer">
+      📎 Upload File
+      <input type="file" style="display:none" id="vpn-file-input" onchange="uploadVpnFile(this)"/>
+    </label>
+  </div>
+
+  <!-- Configured providers summary -->
+  <div class="card">
+    <div class="card-title">Configured Providers</div>
+    <div id="vpn-configured-summary" style="font-size:13px;color:var(--muted)">Loading…</div>
+  </div>
+</div>
+
 <div class="page" id="page-settings">
   <div class="section-header"><span class="section-title">Settings</span></div>
 
@@ -677,6 +827,7 @@ select option{background:var(--bg3)}
     <div class="tab" onclick="switchTab('tab-sub',this)">Subtitles</div>
     <div class="tab" onclick="switchTab('tab-headers',this)">Headers</div>
     <div class="tab" onclick="switchTab('tab-cdm',this)">CDM</div>
+    <div class="tab" onclick="switchTab('tab-vpn',this); loadVpnTab()">VPN / Proxy</div>
   </div>
 
   <!-- Output templates -->
@@ -809,6 +960,160 @@ select option{background:var(--bg3)}
     </div>
     <button class="btn btn-primary" onclick="saveCdmSettings()">Save CDM Settings</button>
   </div>
+
+  <!-- VPN / Proxy Providers -->
+  <div class="tab-panel" id="tab-vpn">
+
+    <!-- Basic (static proxy list) -->
+    <div class="card">
+      <div class="card-title">Basic Proxy
+        <span style="font-size:11px;font-weight:400;color:var(--muted);margin-left:8px">Static proxy list per country code</span>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.7">
+        Map country codes to one or more proxy URIs. Each entry is a country code (e.g. <code style="color:var(--accent)">gb</code>, <code style="color:var(--accent)">us</code>) with one URL or a list.
+        Use in download options as <code style="color:var(--accent)">gb</code> or <code style="color:var(--accent)">us</code>.
+      </p>
+      <div id="basic-proxy-rows"></div>
+      <button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="addBasicProxyRow()">+ Add Entry</button>
+      <div style="margin-top:12px">
+        <button class="btn btn-primary btn-sm" onclick="saveBasicProxy()">Save Basic Proxy</button>
+        <button class="btn btn-danger btn-sm" style="margin-left:8px" onclick="deleteProvider('basic')">Remove Provider</button>
+      </div>
+    </div>
+
+    <!-- NordVPN -->
+    <div class="card">
+      <div class="card-title">NordVPN
+        <span style="font-size:11px;font-weight:400;color:var(--muted);margin-left:8px">Use as <code>nordvpn:gb</code> or just <code>gb</code></span>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.7">
+        Requires <strong>service credentials</strong> (not login credentials) from
+        <a href="https://my.nordaccount.com/dashboard/nordvpn/" target="_blank" style="color:var(--accent)">nordaccount.com</a>.
+        Username and password are each 24 characters.
+      </p>
+      <div class="form-grid">
+        <div class="form-group"><label>Service Username</label><input type="text" id="nord-user" placeholder="48-char service credential"/></div>
+        <div class="form-group"><label>Service Password</label><input type="password" id="nord-pass" placeholder="48-char service credential"/></div>
+      </div>
+      <div style="margin-top:4px">
+        <button class="btn btn-primary btn-sm" onclick="saveNordVPN()">Save NordVPN</button>
+        <button class="btn btn-danger btn-sm" style="margin-left:8px" onclick="deleteProvider('nordvpn')">Remove Provider</button>
+      </div>
+    </div>
+
+    <!-- SurfsharkVPN -->
+    <div class="card">
+      <div class="card-title">SurfsharkVPN
+        <span style="font-size:11px;font-weight:400;color:var(--muted);margin-left:8px">Use as <code>surfsharkvpn:gb</code> or just <code>gb</code></span>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.7">
+        Requires <strong>service credentials</strong> from
+        <a href="https://my.surfshark.com/vpn/manual-setup/main/openvpn" target="_blank" style="color:var(--accent)">surfshark.com</a>.
+        Username and password are each 24 characters.
+      </p>
+      <div class="form-grid">
+        <div class="form-group"><label>Service Username</label><input type="text" id="surf-user" placeholder="24-char service credential"/></div>
+        <div class="form-group"><label>Service Password</label><input type="password" id="surf-pass" placeholder="24-char service credential"/></div>
+      </div>
+      <div style="margin-top:4px">
+        <button class="btn btn-primary btn-sm" onclick="saveSurfshark()">Save SurfsharkVPN</button>
+        <button class="btn btn-danger btn-sm" style="margin-left:8px" onclick="deleteProvider('surfsharkvpn')">Remove Provider</button>
+      </div>
+    </div>
+
+    <!-- WindscribeVPN -->
+    <div class="card">
+      <div class="card-title">WindscribeVPN
+        <span style="font-size:11px;font-weight:400;color:var(--muted);margin-left:8px">Use as <code>windscribevpn:gb</code> or just <code>gb</code></span>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.7">
+        Requires <strong>OpenVPN credentials</strong> from
+        <a href="https://windscribe.com/getconfig/openvpn" target="_blank" style="color:var(--accent)">windscribe.com/getconfig/openvpn</a>.
+      </p>
+      <div class="form-grid">
+        <div class="form-group"><label>Username</label><input type="text" id="wind-user" placeholder="windscribe username"/></div>
+        <div class="form-group"><label>Password</label><input type="password" id="wind-pass" placeholder="windscribe password"/></div>
+      </div>
+      <div style="margin-top:4px">
+        <button class="btn btn-primary btn-sm" onclick="saveWindscribe()">Save WindscribeVPN</button>
+        <button class="btn btn-danger btn-sm" style="margin-left:8px" onclick="deleteProvider('windscribevpn')">Remove Provider</button>
+      </div>
+    </div>
+
+    <!-- ProtonVPN -->
+    <div class="card">
+      <div class="card-title">ProtonVPN
+        <span style="font-size:11px;font-weight:400;color:var(--muted);margin-left:8px">Use as <code>protonvpn:gb</code> or just <code>gb</code></span>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.7">
+        Uses exported Proton session cookies (AUTH/REFRESH cookies from account.proton.me).
+        Upload a cookie file below, then optionally add a server_map for pinned servers.
+        Cookie file should be named <code style="color:var(--accent)">protonvpn.txt</code>.
+      </p>
+      <div class="form-group">
+        <label>Server Map (optional) — JSON: <code style='color:var(--accent)'>{"gb":"uk-lon-01"}</code></label>
+        <textarea id="proton-map" style="height:60px;font-family:monospace;font-size:12px" placeholder='{"gb": "uk-lon-01", "us": "us-ny-01"}'></textarea>
+      </div>
+      <div style="margin-top:4px">
+        <button class="btn btn-primary btn-sm" onclick="saveProtonVPN()">Save ProtonVPN</button>
+        <button class="btn btn-danger btn-sm" style="margin-left:8px" onclick="deleteProvider('protonvpn')">Remove Provider</button>
+      </div>
+    </div>
+
+    <!-- ExpressVPN -->
+    <div class="card">
+      <div class="card-title">ExpressVPN
+        <span style="font-size:11px;font-weight:400;color:var(--muted);margin-left:8px">Use as <code>expressvpn:gb</code> or just <code>gb</code></span>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.7">
+        Uses browser extension cookies from the ExpressVPN Chrome extension.
+        Upload a cookie file named <code style="color:var(--accent)">expressvpn.txt</code> below.
+        Query format: <code style="color:var(--accent)">gb</code>, <code style="color:var(--accent)">us-ny</code>, <code style="color:var(--accent)">us-ny-2</code>.
+      </p>
+      <div class="form-group">
+        <label>Region Map (optional) — JSON: <code style='color:var(--accent)'>{"gb":"london","us":"ny"}</code></label>
+        <textarea id="express-region-map" style="height:60px;font-family:monospace;font-size:12px" placeholder='{"gb": "london", "us": "ny"}'></textarea>
+      </div>
+      <div style="margin-top:4px">
+        <button class="btn btn-primary btn-sm" onclick="saveExpressVPN()">Save ExpressVPN</button>
+        <button class="btn btn-danger btn-sm" style="margin-left:8px" onclick="deleteProvider('expressvpn')">Remove Provider</button>
+      </div>
+    </div>
+
+    <!-- Hola VPN note -->
+    <div class="card" style="border:1px solid var(--border)">
+      <div class="card-title">Hola VPN
+        <span style="font-size:11px;font-weight:400;color:var(--muted);margin-left:8px">Auto-detected when HolaProxy binary is present</span>
+      </div>
+      <p style="font-size:12px;color:var(--muted);line-height:1.7">
+        Hola VPN is automatically enabled when the <code style="color:var(--accent)">HolaProxy</code> binary is found in unshackle's binaries path.
+        No configuration required here. Use as <code style="color:var(--accent)">hola:gb</code> or just <code style="color:var(--accent)">gb</code> in download options.
+      </p>
+    </div>
+
+    <!-- VPN / Cookie files -->
+    <div class="card">
+      <div class="card-title">VPN Cookie & Credential Files
+        <span style="font-size:11px;font-weight:400;color:var(--muted);margin-left:8px">Stored in <code>/config/vpn/</code></span>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.7">
+        Upload cookie files for ExpressVPN (<code style="color:var(--accent)">expressvpn.txt</code>) and ProtonVPN (<code style="color:var(--accent)">protonvpn.txt</code>).
+        Files are automatically found by the providers at startup.
+      </p>
+      <div id="vpn-files-list" style="margin-bottom:12px"></div>
+      <label class="btn btn-ghost btn-sm" style="cursor:pointer">
+        📎 Upload File
+        <input type="file" style="display:none" id="vpn-file-input" onchange="uploadVpnFile(this)"/>
+      </label>
+    </div>
+
+    <!-- Active providers status -->
+    <div class="card">
+      <div class="card-title">Configured Providers</div>
+      <div id="vpn-configured-summary" style="font-size:13px;color:var(--muted)">Loading…</div>
+    </div>
+
+  </div>
 </div>
 
 <!-- ── CONFIG FILE ── -->
@@ -848,7 +1153,7 @@ select option{background:var(--bg3)}
       <span id="job-modal-progress" style="font-size:12px;color:var(--muted)"></span>
     </div>
     <div class="progress-bar-wrap" id="job-modal-progbar" style="margin-bottom:12px"><div class="progress-bar-fill" id="job-modal-progfill" style="width:0%"></div></div>
-    <div class="terminal" style="height:300px" id="job-modal-term"></div>
+    <div class="terminal" style="height:420px" id="job-modal-term"></div>
     <div class="modal-actions">
       <button class="btn btn-danger btn-sm" id="job-modal-cancel-btn" onclick="cancelFromModal()">✕ Cancel</button>
       <button class="btn btn-ghost btn-sm" onclick="closeModal('job-modal')">Close</button>
@@ -1024,7 +1329,7 @@ async function doLogout() {
 const PAGE_TITLES = {
   dashboard:'Dashboard', download:'Download', jobs:'Jobs', files:'Downloads',
   wvds:'WVD Devices', credentials:'Credentials', cookies:'Cookies', services:'Services',
-  settings:'Settings', config:'Config File', tools:'Tools'
+  vpn:'VPN / Proxy', settings:'Settings', config:'Config File', tools:'Tools'
 };
 
 function navigate(page) {
@@ -1040,6 +1345,7 @@ function navigate(page) {
   if (page === 'credentials')  loadCredentials();
   if (page === 'cookies')      loadCookies();
   if (page === 'services')     loadServices();
+  if (page === 'vpn')          loadVpnTab();
   if (page === 'settings')     loadSettings();
   if (page === 'config')       loadConfigRaw();
   if (page === 'tools')        loadTools();
@@ -1231,6 +1537,14 @@ function pollJobModal(id) {
       if (job.error_message) addTermLine(term, `✕ ${job.error_message}`, 'error');
       if (job.error_details && job.error_details !== job.error_message)
         addTermLine(term, `  ${job.error_details}`, 'error');
+      if (job.error_traceback && job.status === 'failed') {
+        addTermLine(term, '── traceback ──', 'warn');
+        job.error_traceback.split('\n').forEach(l => addTermLine(term, l, 'error'));
+      }
+      if (job.worker_stderr && job.status === 'failed') {
+        addTermLine(term, '── stderr ──', 'warn');
+        job.worker_stderr.split('\n').filter(l=>l.trim()).forEach(l => addTermLine(term, l, 'error'));
+      }
 
       if (job.status === 'completed') {
         if (!shownFiles && (job.output_files||[]).length) {
@@ -1991,8 +2305,206 @@ async function saveCdmSettings() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// CONFIG FILE
+// VPN / PROXY PROVIDERS
 // ═══════════════════════════════════════════════════════════════════════════
+
+let _vpnProviders = {};
+
+async function loadVpnTab() {
+  try {
+    const { providers } = await api('/proxy/providers');
+    _vpnProviders = providers || {};
+    populateVpnForms(_vpnProviders);
+    renderVpnSummary(_vpnProviders);
+    await loadVpnFiles();
+  } catch(e) { toast('Failed to load proxy config: '+e.message,'error'); }
+}
+
+function populateVpnForms(p) {
+  // Basic
+  const basic = p.basic || {};
+  const basicRows = document.getElementById('basic-proxy-rows');
+  basicRows.innerHTML = '';
+  for (const [cc, val] of Object.entries(basic)) {
+    addBasicProxyRow(cc, Array.isArray(val) ? val.join(', ') : val);
+  }
+
+  // NordVPN
+  const nord = p.nordvpn || {};
+  document.getElementById('nord-user').value = nord.username || '';
+  document.getElementById('nord-pass').value = nord.password || '';
+
+  // Surfshark
+  const surf = p.surfsharkvpn || {};
+  document.getElementById('surf-user').value = surf.username || '';
+  document.getElementById('surf-pass').value = surf.password || '';
+
+  // Windscribe
+  const wind = p.windscribevpn || {};
+  document.getElementById('wind-user').value = wind.username || '';
+  document.getElementById('wind-pass').value = wind.password || '';
+
+  // ProtonVPN
+  const proton = p.protonvpn || {};
+  document.getElementById('proton-map').value = proton.server_map ? JSON.stringify(proton.server_map, null, 2) : '';
+
+  // ExpressVPN
+  const express = p.expressvpn || {};
+  document.getElementById('express-region-map').value = express.region_map ? JSON.stringify(express.region_map, null, 2) : '';
+}
+
+function renderVpnSummary(p) {
+  const el = document.getElementById('vpn-configured-summary');
+  const names = Object.keys(p);
+  if (!names.length) {
+    el.innerHTML = '<span style="color:var(--muted)">No proxy providers configured yet.</span>';
+    return;
+  }
+  el.innerHTML = names.map(n => `<span class="badge badge-downloading" style="margin:3px 4px 3px 0;text-transform:capitalize">${escHtml(n)}</span>`).join('');
+}
+
+// ── Basic proxy rows ──────────────────────────────────────────────────────
+let _basicRowCount = 0;
+function addBasicProxyRow(cc='', val='') {
+  const id = ++_basicRowCount;
+  const div = document.createElement('div');
+  div.id = `basic-row-${id}`;
+  div.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;align-items:center';
+  div.innerHTML = `
+    <input type="text" placeholder="cc (e.g. gb)" style="width:80px;flex-shrink:0" value="${escHtml(cc)}" class="basic-cc"/>
+    <input type="text" placeholder="https://user:pass@host:port  (comma-separated for multiple)" style="flex:1" value="${escHtml(val)}" class="basic-uri"/>
+    <button class="btn btn-danger btn-sm" onclick="document.getElementById('basic-row-${id}').remove()">✕</button>`;
+  document.getElementById('basic-proxy-rows').appendChild(div);
+}
+
+async function saveBasicProxy() {
+  const rows = document.querySelectorAll('#basic-proxy-rows > div');
+  const basic = {};
+  for (const row of rows) {
+    const cc  = row.querySelector('.basic-cc').value.trim().toLowerCase();
+    const uri = row.querySelector('.basic-uri').value.trim();
+    if (!cc || !uri) continue;
+    const uris = uri.split(',').map(s => s.trim()).filter(Boolean);
+    basic[cc] = uris.length === 1 ? uris[0] : uris;
+  }
+  await _saveProvider('basic', Object.keys(basic).length ? basic : null);
+}
+
+// ── NordVPN ───────────────────────────────────────────────────────────────
+async function saveNordVPN() {
+  const u = document.getElementById('nord-user').value.trim();
+  const p = document.getElementById('nord-pass').value.trim();
+  if (!u || !p) { toast('Username and password required','error'); return; }
+  await _saveProvider('nordvpn', { username: u, password: p });
+}
+
+// ── SurfsharkVPN ──────────────────────────────────────────────────────────
+async function saveSurfshark() {
+  const u = document.getElementById('surf-user').value.trim();
+  const p = document.getElementById('surf-pass').value.trim();
+  if (!u || !p) { toast('Username and password required','error'); return; }
+  await _saveProvider('surfsharkvpn', { username: u, password: p });
+}
+
+// ── WindscribeVPN ─────────────────────────────────────────────────────────
+async function saveWindscribe() {
+  const u = document.getElementById('wind-user').value.trim();
+  const p = document.getElementById('wind-pass').value.trim();
+  if (!u || !p) { toast('Username and password required','error'); return; }
+  await _saveProvider('windscribevpn', { username: u, password: p });
+}
+
+// ── ProtonVPN ─────────────────────────────────────────────────────────────
+async function saveProtonVPN() {
+  const mapRaw = document.getElementById('proton-map').value.trim();
+  let data = {};
+  if (mapRaw) {
+    try { data.server_map = JSON.parse(mapRaw); }
+    catch { toast('Invalid JSON in server map','error'); return; }
+  }
+  await _saveProvider('protonvpn', Object.keys(data).length ? data : {});
+}
+
+// ── ExpressVPN ────────────────────────────────────────────────────────────
+async function saveExpressVPN() {
+  const regionRaw = document.getElementById('express-region-map').value.trim();
+  let data = {};
+  if (regionRaw) {
+    try { data.region_map = JSON.parse(regionRaw); }
+    catch { toast('Invalid JSON in region map','error'); return; }
+  }
+  await _saveProvider('expressvpn', Object.keys(data).length ? data : {});
+}
+
+// ── Shared helpers ────────────────────────────────────────────────────────
+async function _saveProvider(name, data) {
+  try {
+    await api('/proxy/providers', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ name, data })
+    });
+    toast(`${name} saved`,'success');
+    const { providers } = await api('/proxy/providers');
+    _vpnProviders = providers || {};
+    renderVpnSummary(_vpnProviders);
+  } catch(e) { toast('Failed: '+e.message,'error'); }
+}
+
+async function deleteProvider(name) {
+  try {
+    await api(`/proxy/providers/${name}`, { method:'DELETE' });
+    toast(`${name} removed`,'success');
+    populateVpnForms({});
+    await loadVpnTab();
+  } catch(e) { toast('Failed: '+e.message,'error'); }
+}
+
+// ── VPN cookie files ──────────────────────────────────────────────────────
+async function loadVpnFiles() {
+  try {
+    const { files } = await api('/proxy/vpn-files');
+    const el = document.getElementById('vpn-files-list');
+    if (!files.length) {
+      el.innerHTML = '<div style="font-size:12px;color:var(--muted)">No VPN files uploaded yet.</div>';
+      return;
+    }
+    el.innerHTML = files.map(f => `
+      <div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)">
+        <span style="font-size:13px;flex:1">📄 ${escHtml(f.name)}</span>
+        <span style="font-size:11px;color:var(--muted)">${(f.size/1024).toFixed(1)} KB</span>
+        <button class="btn btn-danger btn-sm" onclick="deleteVpnFile('${escHtml(f.name)}')">✕</button>
+      </div>`).join('');
+  } catch(e) { /* silent */ }
+}
+
+async function uploadVpnFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const fd = new FormData();
+  fd.append('file', file);
+  try {
+    await fetch('/api/proxy/vpn-files', {
+      method:'POST',
+      headers:{'X-Session-Token': document.cookie.match(/session_token=([^;]+)/)?.[1] || ''},
+      body: fd,
+      credentials: 'include'
+    });
+    toast(`${file.name} uploaded`,'success');
+    input.value = '';
+    await loadVpnFiles();
+  } catch(e) { toast('Upload failed: '+e.message,'error'); }
+}
+
+async function deleteVpnFile(name) {
+  try {
+    await api(`/proxy/vpn-files/${encodeURIComponent(name)}`, {method:'DELETE'});
+    toast(`${name} deleted`,'success');
+    await loadVpnFiles();
+  } catch(e) { toast('Failed: '+e.message,'error'); }
+}
+
+
 
 async function loadConfigRaw() {
   try { const { content } = await api('/config/raw'); document.getElementById('config-editor').value = content; }
